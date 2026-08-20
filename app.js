@@ -834,8 +834,12 @@
         bookedDropdownHtml = `
           <details class="booked-dropdown">
             <summary class="booked-summary">
-              <span><i class="fa-solid fa-users-viewfinder"></i> 已預假 <strong>${dateLeaves.length}</strong> 人</span>
-              <i class="fa-solid fa-chevron-down arrow-icon"></i>
+              <span>
+                <i class="fa-solid fa-users-viewfinder"></i> 
+                <span class="desktop-text">已預假 <strong>${dateLeaves.length}</strong> 人</span>
+                <span class="mobile-text"><strong>${dateLeaves.length}</strong>人 ▾</span>
+              </span>
+              <i class="fa-solid fa-chevron-down arrow-icon desktop-text"></i>
             </summary>
             <div class="booked-popover-content">
               <div class="popover-header"><i class="fa-solid fa-clipboard-list"></i> 預假同仁名冊：</div>
@@ -846,32 +850,58 @@
           </details>
         `;
       } else {
-        bookedDropdownHtml = `<div class="no-booked-text"><i class="fa-regular fa-circle-dot"></i> 尚無預假</div>`;
+        bookedDropdownHtml = `
+          <div class="no-booked-text">
+            <span class="desktop-text"><i class="fa-regular fa-circle-dot"></i> 尚無預假</span>
+            <span class="mobile-text">無預假</span>
+          </div>
+        `;
       }
 
       // Action Button Html (若年度已被主管關閉鎖定，強制停用所有搶假按鈕)
       let actionBtnHtml = '';
       if (isYearLocked) {
-        actionBtnHtml = `<button class="btn-day-action btn-disabled-full" disabled><i class="fa-solid fa-lock"></i> ${year} 年已關閉鎖定</button>`;
+        actionBtnHtml = `
+          <button class="btn-day-action btn-disabled-full" disabled>
+            <span class="desktop-text"><i class="fa-solid fa-lock"></i> ${year} 年已關閉鎖定</span>
+            <span class="mobile-text"><i class="fa-solid fa-lock"></i> 鎖定</span>
+          </button>
+        `;
       } else if (isMyBooked) {
-        actionBtnHtml = `<div class="badge-locked-day"><i class="fa-solid fa-lock"></i> 我的預假 (鎖檔)</div>`;
+        actionBtnHtml = `
+          <div class="badge-locked-day">
+            <span class="desktop-text"><i class="fa-solid fa-lock"></i> 我的預假 (鎖檔)</span>
+            <span class="mobile-text"><i class="fa-solid fa-check"></i> 已預假</span>
+          </div>
+        `;
       } else if (isFull) {
-        actionBtnHtml = `<button class="btn-day-action btn-disabled-full" disabled><i class="fa-solid fa-ban"></i> 額滿停搶 (${dateLeaves.length}/${limit})</button>`;
+        actionBtnHtml = `
+          <button class="btn-day-action btn-disabled-full" disabled>
+            <span class="desktop-text"><i class="fa-solid fa-ban"></i> 額滿停搶 (${dateLeaves.length}/${limit})</span>
+            <span class="mobile-text"><i class="fa-solid fa-ban"></i> 額滿</span>
+          </button>
+        `;
       } else {
-        actionBtnHtml = `<button class="btn-day-action btn-book-now" data-date="${dateStr}">
-          <i class="fa-solid fa-bolt"></i> 搶預假 (餘 ${limit - dateLeaves.length} 名額)
-        </button>`;
+        actionBtnHtml = `
+          <button class="btn-day-action btn-book-now" data-date="${dateStr}">
+            <span class="desktop-text"><i class="fa-solid fa-bolt"></i> 搶預假 (餘 ${limit - dateLeaves.length} 名額)</span>
+            <span class="mobile-text"><i class="fa-solid fa-bolt"></i> 搶 (餘${limit - dateLeaves.length})</span>
+          </button>
+        `;
       }
 
-      const holidayBadgeHtml = holidayName ? `<span class="holiday-name-badge"><i class="fa-solid fa-flag"></i> ${holidayName}</span>` : '';
+      const holidayBadgeHtml = holidayName ? `<span class="holiday-name-badge"><i class="fa-solid fa-flag"></i> <span class="desktop-text">${holidayName}</span><span class="mobile-text">${holidayName.slice(0, 2)}</span></span>` : '';
 
       dayCell.innerHTML = `
         <div class="day-header">
-          <div style="display:flex; align-items:center; gap:6px;">
+          <div style="display:flex; align-items:center; gap:4px;">
             <span class="day-number">${day}</span>
             ${holidayBadgeHtml}
           </div>
-          <span class="day-limit-badge" title="${label}">${type} 上限 ${limit} 人</span>
+          <span class="day-limit-badge" title="${label}">
+            <span class="desktop-text">${type} 上限 ${limit} 人</span>
+            <span class="mobile-text">限${limit}人</span>
+          </span>
         </div>
         <div class="booked-section">
           ${bookedDropdownHtml}

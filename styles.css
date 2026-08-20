@@ -1082,6 +1082,16 @@ code {
   to { opacity: 1; transform: translateX(0); }
 }
 
+/* Dual Responsive Display Helper Classes */
+.mobile-text {
+  display: none !important;
+}
+.desktop-text {
+  display: inline-flex !important;
+  align-items: center;
+  gap: 4px;
+}
+
 /* Responsive Media Queries (RWD 雙端適應：電腦與手機極致體驗切換) */
 
 /* 平板與小螢幕適應 (< 960px) */
