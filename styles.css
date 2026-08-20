@@ -1082,27 +1082,139 @@ code {
   to { opacity: 1; transform: translateX(0); }
 }
 
-/* Responsive Media Queries */
-@responsive {
-  @media (max-width: 900px) {
-    .admin-dashboard-grid {
-      grid-template-columns: 1fr;
-    }
-    .span-2 {
-      grid-column: span 1;
-    }
+/* Responsive Media Queries (RWD 雙端適應：電腦與手機極致體驗切換) */
+
+/* 平板與小螢幕適應 (< 960px) */
+@media (max-width: 960px) {
+  .admin-dashboard-grid {
+    grid-template-columns: 1fr;
+  }
+  .span-2 {
+    grid-column: span 1;
+  }
+  .top-nav {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+  }
+  .user-profile {
+    justify-content: space-between;
+    width: 100%;
+  }
+}
+
+/* 手機端專屬最適化 (< 768px) */
+@media (max-width: 768px) {
+  body {
+    padding: 10px 8px;
+  }
+  .app-wrapper {
+    gap: 12px;
+  }
+  .top-nav {
+    padding: 0.85rem 1rem;
+    border-radius: 14px;
+  }
+  .nav-brand h1 {
+    font-size: 1.15rem;
+  }
+  .stats-row {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+  .stat-card {
+    padding: 1rem;
+  }
+  
+  /* 日曆頭部與控制按鈕 */
+  .calendar-header {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+  }
+  .calendar-controls {
+    justify-content: space-between;
+    width: 100%;
+  }
+  .calendar-controls button {
+    padding: 6px 12px;
+    font-size: 0.85rem;
+  }
+  
+  /* 日曆網格與格子 */
+  .calendar-days-grid {
+    gap: 4px;
+  }
+  .calendar-weekdays-grid div {
+    font-size: 0.75rem;
+    padding: 4px 0;
+  }
+  .day-cell {
+    min-height: 90px;
+    padding: 0.35rem 0.25rem;
+    border-radius: 8px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+  }
+  .day-cell-top {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 2px;
+    margin-bottom: 2px;
+  }
+  .day-number {
+    font-size: 0.85rem;
+  }
+  .day-badge {
+    font-size: 0.65rem;
+    padding: 1px 4px;
+  }
+  
+  /* 預假按鈕與選單手機觸控最適化 */
+  .btn-book-leave {
+    width: 100%;
+    padding: 5px 0;
+    font-size: 0.75rem;
+    min-height: 32px;
+    margin-top: 2px;
+  }
+  .booked-dropdown summary {
+    font-size: 0.7rem;
+    padding: 3px 4px;
+  }
+  
+  /* 表格防擠壓可平滑橫向滾動 */
+  .admin-card {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  .data-table {
+    min-width: 600px;
   }
 
-  @media (max-width: 768px) {
-    .calendar-days-grid {
-      gap: 4px;
-    }
-    .day-cell {
-      min-height: 80px;
-      padding: 0.4rem;
-    }
-    .day-number {
-      font-size: 0.9rem;
-    }
+  /* 彈窗 Modal 手機端直向滿版體驗 */
+  .modal-overlay {
+    padding: 12px;
+  }
+  .modal-card {
+    padding: 1.25rem;
+    max-height: 90vh;
+    overflow-y: auto;
+  }
+}
+
+/* 超小螢幕手機 (< 480px) */
+@media (max-width: 480px) {
+  .day-cell {
+    min-height: 85px;
+    padding: 0.25rem 0.15rem;
+  }
+  .day-number {
+    font-size: 0.8rem;
+  }
+  .btn-book-leave {
+    font-size: 0.7rem;
+    letter-spacing: -0.5px;
   }
 }
