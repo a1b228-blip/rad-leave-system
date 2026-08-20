@@ -642,13 +642,19 @@ code {
 .calendar-weekdays {
   display: grid;
   grid-template-columns: repeat(7, 1fr);
+  gap: 10px;
   text-align: center;
-  font-weight: 600;
+  font-weight: 700;
   color: var(--text-muted);
   font-size: 0.9rem;
-  padding-bottom: 1rem;
+  padding-bottom: 0.75rem;
   border-bottom: 1px solid var(--border-color);
   margin-bottom: 0.75rem;
+}
+
+.calendar-weekdays > div {
+  min-width: 0;
+  box-sizing: border-box;
 }
 
 .calendar-days-grid {
@@ -1151,21 +1157,32 @@ code {
     font-size: 0.85rem;
   }
   
-  /* 日曆網格與格子 */
-  .calendar-days-grid {
-    gap: 4px;
+  /* 日曆網格與星期標題 100% 絕對對齊 */
+  .calendar-grid-container {
+    padding: 0.75rem 0.35rem;
   }
-  .calendar-weekdays-grid div {
-    font-size: 0.75rem;
-    padding: 4px 0;
+  .calendar-weekdays {
+    gap: 3px;
+    margin-bottom: 0.5rem;
+    padding-bottom: 0.5rem;
+  }
+  .calendar-weekdays > div {
+    font-size: 0.72rem;
+    font-weight: 700;
+    padding: 2px 0;
+  }
+  .calendar-days-grid {
+    gap: 3px;
   }
   .day-cell {
-    min-height: 90px;
-    padding: 0.35rem 0.25rem;
-    border-radius: 8px;
+    min-height: 85px;
+    padding: 0.25rem 0.15rem;
+    border-radius: 6px;
     display: flex;
     flex-direction: column;
     justify-content: space-between;
+    min-width: 0;
+    box-sizing: border-box;
   }
   .day-cell-top {
     flex-direction: column;
@@ -1216,15 +1233,27 @@ code {
 
 /* 超小螢幕手機 (< 480px) */
 @media (max-width: 480px) {
+  .calendar-grid-container {
+    padding: 0.5rem 0.25rem;
+  }
+  .calendar-weekdays {
+    gap: 2px;
+  }
+  .calendar-weekdays > div {
+    font-size: 0.68rem;
+  }
+  .calendar-days-grid {
+    gap: 2px;
+  }
   .day-cell {
-    min-height: 85px;
-    padding: 0.25rem 0.15rem;
+    min-height: 80px;
+    padding: 0.2rem 0.1rem;
   }
   .day-number {
-    font-size: 0.8rem;
+    font-size: 0.78rem;
   }
   .btn-book-leave {
-    font-size: 0.7rem;
+    font-size: 0.68rem;
     letter-spacing: -0.5px;
   }
 }
