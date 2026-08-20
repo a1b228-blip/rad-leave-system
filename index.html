@@ -1,0 +1,525 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>佳里奇美醫院 放射科員工線上預假系統</title>
+  <!-- Google Fonts: Inter & Outfit -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <!-- FontAwesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <!-- 背景裝飾微光效果 -->
+  <div class="bg-glow bg-glow-1"></div>
+  <div class="bg-glow bg-glow-2"></div>
+
+  <!-- 1. 登入視窗 -->
+  <div id="login-modal" class="login-overlay">
+    <div class="login-card glass-panel">
+      <div class="brand-header">
+        <div class="brand-logo">
+          <i class="fa-solid fa-hospital-user"></i>
+        </div>
+        <h2>佳里奇美醫院 放射科</h2>
+        <p class="subtitle">員工線上預假管理系統</p>
+      </div>
+
+      <form id="login-form">
+        <div class="form-group">
+          <label for="emp-id"><i class="fa-solid fa-id-card"></i> 員工編號 / 帳號</label>
+          <input type="text" id="emp-id" placeholder="請輸入員工編號" required autocomplete="username">
+        </div>
+
+        <div class="form-group">
+          <label for="emp-password">
+            <i class="fa-solid fa-lock"></i> 密碼
+            <span class="form-hint" style="font-size: 0.8rem; color: var(--accent-cyan); margin-left: 6px;">(預設密碼即員工編號)</span>
+          </label>
+          <div class="password-wrapper">
+            <input type="password" id="emp-password" placeholder="請輸入密碼 (預設即員工編號)" required autocomplete="current-password">
+            <button type="button" class="btn-toggle-pwd" id="toggle-pwd"><i class="fa-regular fa-eye"></i></button>
+          </div>
+        </div>
+
+        <!-- 登入錯誤即時提示區域 -->
+        <div id="login-error-msg" class="hidden" style="color: #fb7185; background: rgba(244, 63, 94, 0.15); border: 1px solid rgba(244, 63, 94, 0.3); padding: 8px 12px; border-radius: 8px; font-size: 0.85rem; margin-bottom: 1rem;">
+          <i class="fa-solid fa-circle-exclamation"></i> <span>帳號或密碼錯誤，請重新確認！</span>
+        </div>
+
+        <button type="submit" class="btn-primary btn-block">
+          <i class="fa-solid fa-right-to-bracket"></i> 安全登入系統
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- 2. 主應用程式介面 -->
+  <div id="app-container" class="app-wrapper hidden">
+    <!-- 頂部導覽列 -->
+    <header class="top-nav glass-panel">
+      <div class="nav-brand">
+        <i class="fa-solid fa-x-ray logo-icon"></i>
+        <div class="brand-text">
+          <h1>佳里奇美醫院 放射科預假系統</h1>
+          <span class="badge badge-year" id="header-year-badge"><i class="fa-regular fa-calendar-check"></i> <span id="header-year-text">2027</span> 年度預假</span>
+        </div>
+      </div>
+
+      <div class="user-profile">
+        <button id="btn-view-rules" class="btn-primary btn-sm" style="margin-right: 8px;">
+          <i class="fa-solid fa-scroll"></i> 預假規則說明
+        </button>
+        <div class="profile-info">
+          <span id="user-name" class="name">載入中...</span>
+          <span id="user-role-badge" class="badge">員工</span>
+        </div>
+        <button id="btn-logout" class="btn-secondary btn-sm" title="登出系統">
+          <i class="fa-solid fa-arrow-right-from-bracket"></i> 登出
+        </button>
+      </div>
+    </header>
+
+    <!-- 儀表板頁首：統計卡片 -->
+    <section class="stats-grid">
+      <!-- 統計卡 1：剩餘年假 -->
+      <div class="stat-card glass-panel">
+        <div class="stat-icon icon-cyan">
+          <i class="fa-solid fa-clock"></i>
+        </div>
+        <div class="stat-content">
+          <span class="stat-label">剩餘年假時數</span>
+          <div class="stat-value"><span id="stat-remaining-hours">0</span> <small>小時</small></div>
+          <div class="progress-bar-bg">
+            <div id="stat-hours-bar" class="progress-bar-fill" style="width: 0%;"></div>
+          </div>
+          <span id="stat-hours-subtext" class="stat-subtext">原總年假 0 小時 ｜ 已預扣 0 小時</span>
+        </div>
+      </div>
+
+      <!-- 統計卡 2：已預假天數 -->
+      <div class="stat-card glass-panel">
+        <div class="stat-icon icon-purple">
+          <i class="fa-solid fa-calendar-day"></i>
+        </div>
+        <div class="stat-content">
+          <span class="stat-label">個人已預假天數</span>
+          <div class="stat-value"><span id="stat-booked-days">0</span> <small>天</small></div>
+          <span class="stat-subtext"><i class="fa-solid fa-shield-halved"></i> 假單即時扣時數並已鎖檔</span>
+        </div>
+      </div>
+
+      <!-- 統計卡 3：系統模式/預假規則 -->
+      <div class="stat-card glass-panel">
+        <div class="stat-icon icon-amber">
+          <i class="fa-solid fa-bolt"></i>
+        </div>
+        <div class="stat-content">
+          <span class="stat-label">預假機制</span>
+          <div class="stat-value-text">先搶先贏模式</div>
+          <span class="stat-subtext"><i class="fa-solid fa-users"></i> 每日預設上限：<strong id="stat-default-limit">2</strong> 人</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- 頁籤控制列 -->
+    <nav class="main-tabs glass-panel">
+      <button class="tab-btn active" data-tab="calendar-tab">
+        <i class="fa-solid fa-calendar-days"></i> 2027 年假預約日曆
+      </button>
+      <button class="tab-btn" data-tab="my-leaves-tab">
+        <i class="fa-solid fa-list-check"></i> 個人預假明細
+      </button>
+      <!-- 僅主管可見頁籤 -->
+      <button id="tab-admin" class="tab-btn btn-admin-tab hidden" data-tab="admin-tab">
+        <i class="fa-solid fa-user-gear"></i> 主管管理控制台
+      </button>
+    </nav>
+
+    <!-- 頁籤內容區 -->
+    <main class="tab-contents">
+      <!-- 頁籤 1: 預假日曆視圖 -->
+      <section id="calendar-tab" class="tab-panel active">
+        <!-- 年度鎖定/關閉警示 Banner -->
+        <div id="calendar-year-locked-banner" class="hidden" style="background: rgba(244, 63, 94, 0.15); border: 1px solid rgba(244, 63, 94, 0.4); color: #fb7185; padding: 12px 18px; border-radius: 12px; margin-bottom: 1.25rem; font-weight: 600; display: flex; align-items: center; gap: 10px; box-shadow: 0 4px 15px rgba(244, 63, 94, 0.15);">
+          <i class="fa-solid fa-lock" style="font-size: 1.3rem;"></i>
+          <span>【主管公告】目前 <strong id="locked-banner-year-text" style="font-size: 1.1rem; text-decoration: underline;">2028</strong> 年度的線上預假功能已被主管關閉鎖定，暫不開放同仁發起搶預假。</span>
+        </div>
+
+        <div class="calendar-header-panel glass-panel">
+          <div class="calendar-controls">
+            <button id="btn-prev-month" class="btn-icon"><i class="fa-solid fa-chevron-left"></i></button>
+            <h2 id="current-month-display">2027 年 1 月</h2>
+            <button id="btn-next-month" class="btn-icon"><i class="fa-solid fa-chevron-right"></i></button>
+            <button id="btn-today" class="btn-secondary btn-sm"><i class="fa-solid fa-calendar-today"></i> 跳至本月</button>
+
+            <!-- 選擇已開放年度選單 -->
+            <div style="display: flex; align-items: center; gap: 6px; margin-left: 12px;">
+              <label for="select-user-calendar-year" style="font-size: 0.85rem; font-weight: 600; color: var(--accent-cyan);">
+                <i class="fa-solid fa-calendar-days"></i> 選擇年度：
+              </label>
+              <select id="select-user-calendar-year" style="padding: 4px 8px; border-radius: 6px; background: rgba(0,0,0,0.3); color: var(--text-main); border: 1px solid var(--border-color); font-weight: 600;">
+                <!-- 動態載入主管已授權開放之年度 -->
+              </select>
+            </div>
+          </div>
+
+          <div class="calendar-legend">
+            <span class="legend-item"><span class="legend-dot status-available"></span> 可預假</span>
+            <span class="legend-item"><span class="legend-dot status-my-booked"></span> 我的預假 (鎖檔)</span>
+            <span class="legend-item"><span class="legend-dot status-full"></span> 名額已滿 (停搶)</span>
+          </div>
+        </div>
+
+        <!-- 日曆表格容器 -->
+        <div class="calendar-grid-container glass-panel">
+          <div class="calendar-weekdays">
+            <div>週日</div>
+            <div>週一</div>
+            <div>週二</div>
+            <div>週三</div>
+            <div>週四</div>
+            <div>週五</div>
+            <div>週六</div>
+          </div>
+          <div id="calendar-days" class="calendar-days-grid">
+            <!-- 日曆天數動態繪製 -->
+          </div>
+        </div>
+      </section>
+
+      <!-- 頁籤 2: 個人預假明細卡片 -->
+      <section id="my-leaves-tab" class="tab-panel">
+        <div class="section-header glass-panel">
+          <h2><i class="fa-solid fa-clipboard-user"></i> 個人預假歷史紀錄與明細</h2>
+          <p class="section-desc">已申請之預假項目皆已完成時數扣除與防竄改鎖檔。</p>
+        </div>
+
+        <div class="glass-panel mt-4">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>預假日期</th>
+                <th>星期</th>
+                <th>扣除年假時數</th>
+                <th>預假時間</th>
+                <th>假單狀態</th>
+                <th>操作</th>
+              </tr>
+            </thead>
+            <tbody id="my-leaves-list">
+              <!-- 個人預假列表動態繪製 -->
+            </tbody>
+          </table>
+          <div id="my-leaves-empty" class="empty-state hidden">
+            <i class="fa-regular fa-folder-open"></i>
+            <p>目前尚無預假紀錄，請前往「預假日曆」進行點選預約。</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- 頁籤 3: 主管控制台 (Admin Control Panel) -->
+      <section id="admin-tab" class="tab-panel">
+        <div class="admin-dashboard-grid">
+          <!-- 主管功能區 0: 跨年度授權開放與預假系統目標年度管理 -->
+          <div class="admin-card glass-panel span-2" id="admin-year-card">
+            <div class="card-title-bar">
+              <h3><i class="fa-solid fa-calendar-plus"></i> 主管跨年度授權開放與預假目標年度管理</h3>
+            </div>
+            <div style="padding: 1rem 0;">
+              <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 1.25rem;">
+                <i class="fa-solid fa-shield-halved"></i> 只有主管具備開放全新年度之授權權限。主管確認開放新年度後，全科同仁方可切換至該年度發起線上搶預假。（預設開放 2027 年度）
+              </p>
+
+              <div style="display: flex; align-items: flex-end; gap: 1.5rem; flex-wrap: wrap;">
+                <div class="form-group inline-group" style="margin-bottom: 0; flex: 1; min-width: 250px;">
+                  <label for="admin-select-allowed-year" style="font-weight: 600; color: var(--accent-cyan);">
+                    <i class="fa-solid fa-calendar-check"></i> 主管切換目前系統管理年度：
+                  </label>
+                  <select id="admin-select-allowed-year" style="padding: 8px 12px; width: 100%;">
+                    <!-- 動態載入主管已授權開放之年度 -->
+                  </select>
+                </div>
+
+                <div class="form-group inline-group" style="margin-bottom: 0; display: flex; align-items: flex-end; gap: 8px;">
+                  <div>
+                    <label for="admin-input-new-year">主管授權開放全新年度：</label>
+                    <input type="number" id="admin-input-new-year" min="2027" max="2035" value="2028" style="padding: 8px 12px; width: 120px;">
+                  </div>
+                  <button id="btn-add-allowed-year" class="btn-primary">
+                    <i class="fa-solid fa-lock-open"></i> 確認授權開放此年度
+                  </button>
+                </div>
+              </div>
+
+              <!-- 已開放年度之關閉/鎖定與重開管理清單 -->
+              <div style="margin-top: 1.25rem; border-top: 1px dashed var(--border-color); padding-top: 1rem;">
+                <h5 style="font-size: 0.9rem; color: var(--text-main); margin-bottom: 0.75rem;">
+                  <i class="fa-solid fa-user-lock"></i> 各年度預假開關管控 (主管可隨時「關閉/鎖定」或「重新開啟」特定年度預假功能)：
+                </h5>
+                <div id="admin-year-status-list" style="display: flex; flex-direction: column; gap: 10px;">
+                  <!-- 動態繪製各年度開關與按鈕 -->
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 主管功能區 1: 匯出與設定總覽 -->
+          <div class="admin-card glass-panel span-2">
+            <div class="card-title-bar">
+              <h3><i class="fa-solid fa-sliders"></i> 全科預假管理與資料匯出</h3>
+              <div class="card-actions">
+                <button id="btn-export-excel" class="btn-success">
+                  <i class="fa-solid fa-file-excel"></i> 匯出全科預假 Excel / CSV
+                </button>
+              </div>
+            </div>
+
+            <!-- 主管批量設定可預假人數上限 (4 種日期類型模型) -->
+            <div class="limit-setting-box">
+              <h4><i class="fa-solid fa-calendar-week"></i> 批量設定 4 種日期類型預假名額模型 (全年度連動)</h4>
+              <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 1rem;">
+                主管可在此調整 4 種日期模型的預假名額上限，設定完成後點擊「一鍵連動套用」，系統將自動連動 2027 全整年日曆。
+              </p>
+
+              <div class="rules-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; margin-bottom: 1.25rem;">
+                <div class="rule-card" style="background: rgba(255,255,255,0.03); border: 1px solid var(--border-color); padding: 12px; border-radius: 10px;">
+                  <label for="limit-weekday" style="font-weight: 600; font-size: 0.9rem; color: var(--accent-cyan);">
+                    <i class="fa-solid fa-briefcase"></i> 1. 平常日 (週一~五)
+                  </label>
+                  <div style="display: flex; align-items: center; gap: 6px; margin-top: 6px;">
+                    <input type="number" id="limit-weekday" min="0" max="10" value="2" style="padding: 6px 10px;">
+                    <span style="font-size: 0.85rem; color: var(--text-muted);">人/日</span>
+                  </div>
+                </div>
+
+                <div class="rule-card" style="background: rgba(255,255,255,0.03); border: 1px solid var(--border-color); padding: 12px; border-radius: 10px;">
+                  <label for="limit-sat" style="font-weight: 600; font-size: 0.9rem; color: var(--accent-teal);">
+                    <i class="fa-solid fa-calendar-day"></i> 2. 禮拜六 (週六)
+                  </label>
+                  <div style="display: flex; align-items: center; gap: 6px; margin-top: 6px;">
+                    <input type="number" id="limit-sat" min="0" max="10" value="1" style="padding: 6px 10px;">
+                    <span style="font-size: 0.85rem; color: var(--text-muted);">人/日</span>
+                  </div>
+                </div>
+
+                <div class="rule-card" style="background: rgba(255,255,255,0.03); border: 1px solid var(--border-color); padding: 12px; border-radius: 10px;">
+                  <label for="limit-sun" style="font-weight: 600; font-size: 0.9rem; color: var(--accent-amber);">
+                    <i class="fa-solid fa-sun"></i> 3. 禮拜天 (週日)
+                  </label>
+                  <div style="display: flex; align-items: center; gap: 6px; margin-top: 6px;">
+                    <input type="number" id="limit-sun" min="0" max="10" value="0" style="padding: 6px 10px;">
+                    <span style="font-size: 0.85rem; color: var(--text-muted);">人/日</span>
+                  </div>
+                </div>
+
+                <div class="rule-card" style="background: rgba(255,255,255,0.03); border: 1px solid var(--border-color); padding: 12px; border-radius: 10px;">
+                  <label for="limit-holiday" style="font-weight: 600; font-size: 0.9rem; color: var(--accent-rose);">
+                    <i class="fa-solid fa-flag"></i> 4. 國定假日
+                  </label>
+                  <div style="display: flex; align-items: center; gap: 6px; margin-top: 6px;">
+                    <input type="number" id="limit-holiday" min="0" max="10" value="0" style="padding: 6px 10px;">
+                    <span style="font-size: 0.85rem; color: var(--text-muted);">人/日</span>
+                  </div>
+                </div>
+              </div>
+
+              <div style="display: flex; justify-content: flex-end; margin-bottom: 1.5rem;">
+                <button id="btn-apply-rule-limits" class="btn-primary">
+                  <i class="fa-solid fa-wand-magic-sparkles"></i> 一鍵連動套用至 2027 全年日曆
+                </button>
+              </div>
+
+              <!-- 單日個別微調特定日期 -->
+              <div style="border-top: 1px dashed var(--border-color); pt-3; padding-top: 1rem;">
+                <h5 style="font-size: 0.9rem; color: var(--text-main); margin-bottom: 0.75rem;">
+                  <i class="fa-solid fa-sliders"></i> 單日特定日期微調（優先於類型模型）
+                </h5>
+                <div class="limit-form-inline" style="display: flex; align-items: flex-end; gap: 1rem; flex-wrap: wrap;">
+                  <div class="form-group inline-group" style="margin-bottom:0;">
+                    <label for="setting-date">選擇微調日期：</label>
+                    <input type="date" id="setting-date" min="2027-01-01" max="2027-12-31" value="2027-01-01">
+                  </div>
+                  <div class="form-group inline-group" style="margin-bottom:0;">
+                    <label for="setting-limit">該日獨特名額上限 (人)：</label>
+                    <input type="number" id="setting-limit" min="0" max="10" value="2">
+                  </div>
+                  <button id="btn-save-limit" class="btn-secondary">
+                    <i class="fa-solid fa-floppy-disk"></i> 儲存單日微調
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 主管功能區 2: 全科同仁年假額度管理 -->
+          <div class="admin-card glass-panel span-2">
+            <div class="card-title-bar">
+              <h3><i class="fa-solid fa-hospital-user"></i> 全科同仁年假時數與權限名冊</h3>
+              <div class="card-actions" style="display:flex; gap:8px;">
+                <input type="file" id="file-import-emp" accept=".csv" class="hidden">
+                <button id="btn-trigger-import-emp" class="btn-success btn-sm">
+                  <i class="fa-solid fa-file-import"></i> 批次匯入同仁名單 CSV
+                </button>
+                <button id="btn-add-employee" class="btn-secondary btn-sm">
+                  <i class="fa-solid fa-user-plus"></i> 新增同仁
+                </button>
+              </div>
+            </div>
+
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>員工編號</th>
+                  <th>姓名</th>
+                  <th>職務／職稱</th>
+                  <th>原始年假 (小時)</th>
+                  <th>已預扣時數</th>
+                  <th>剩餘年假 (小時)</th>
+                  <th>預假天數</th>
+                  <th>管理操作</th>
+                </tr>
+              </thead>
+              <tbody id="admin-employee-table">
+                <!-- 員工清單動態繪製 -->
+              </tbody>
+            </table>
+          </div>
+
+          <!-- 主管功能區 3: 依員工編號精確查詢同仁預假日期與強制解鎖/撤銷 -->
+          <div class="admin-card glass-panel span-2">
+            <div class="card-title-bar">
+              <h3><i class="fa-solid fa-user-check"></i> 同仁個人預假日期查詢與強制解鎖/撤銷管理</h3>
+            </div>
+
+            <div style="padding: 1rem 0; border-bottom: 1px dashed var(--border-color); margin-bottom: 1.25rem;">
+              <div style="display: flex; align-items: flex-end; gap: 1.25rem; flex-wrap: wrap;">
+                <div class="form-group inline-group" style="margin-bottom: 0; flex: 1; min-width: 260px;">
+                  <label for="admin-filter-emp-select" style="font-weight: 600; color: var(--accent-cyan);">
+                    <i class="fa-solid fa-id-card"></i> 選擇要查詢/解鎖的同仁員工編號：
+                  </label>
+                  <select id="admin-filter-emp-select" style="padding: 8px 12px; width: 100%;">
+                    <option value="">-- 請選擇同仁 (顯示姓名與編號) --</option>
+                    <!-- 動態載入全科同仁選單 -->
+                  </select>
+                </div>
+                <div class="form-group inline-group" style="margin-bottom: 0;">
+                  <label for="admin-filter-emp-input">或手動輸入員工編號：</label>
+                  <input type="text" id="admin-filter-emp-input" placeholder="例: 961137" style="padding: 8px 12px; width: 160px;">
+                </div>
+              </div>
+            </div>
+
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>預假日期</th>
+                  <th>星期</th>
+                  <th>預扣時數</th>
+                  <th>搶假成功時間</th>
+                  <th>假單鎖檔狀態</th>
+                  <th>主管強制撤銷並釋放名額</th>
+                </tr>
+              </thead>
+              <tbody id="admin-all-leaves-table">
+                <!-- 該同仁之預假假單動態繪製 -->
+              </tbody>
+            </table>
+
+            <div id="admin-leaves-empty-tip" style="text-align: center; padding: 2rem 0; color: var(--text-muted); font-size: 0.95rem;">
+              <i class="fa-solid fa-magnifying-glass"></i> 請於上方選擇或輸入員工編號，系統將只列出該同仁的預假日期。
+            </div>
+          </div>
+          <!-- 主管功能區 4: 編輯與即時發布全科預假規範說明 -->
+          <div class="admin-card glass-panel span-2" id="admin-rules-card">
+            <div class="card-title-bar">
+              <h3><i class="fa-solid fa-pen-to-square"></i> 編輯與發布全科預假規範說明（同仁點選即時同步）</h3>
+            </div>
+            <div style="padding: 1rem 0;">
+              <label for="admin-rules-textarea" style="font-weight: 600; font-size: 0.9rem; color: var(--accent-cyan); display: block; margin-bottom: 8px;">
+                <i class="fa-solid fa-file-pen"></i> 主管公告排版文字編輯區 (修改後點擊儲存，全科同仁點選「預假規則說明」即同步連動)：
+              </label>
+              <textarea id="admin-rules-textarea" rows="12" style="width: 100%; padding: 14px; border-radius: 12px; background: rgba(0,0,0,0.35); color: var(--text-main); border: 1px solid var(--border-color); font-family: inherit; font-size: 0.92rem; line-height: 1.7; resize: vertical;"></textarea>
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 12px; flex-wrap: wrap; gap: 10px;">
+                <span style="font-size: 0.85rem; color: var(--text-muted);"><i class="fa-solid fa-circle-info"></i> 點擊儲存後，系統將自動連動更新給全科 27 位同仁。</span>
+                <button id="btn-save-rules-doc" class="btn-primary">
+                  <i class="fa-solid fa-paper-plane"></i> 儲存並即時發佈連動至同仁端
+                </button>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <!-- Modal: 新增/編輯同仁彈窗 -->
+  <div id="modal-employee" class="modal-overlay hidden">
+    <div class="modal-card glass-panel">
+      <div class="modal-header">
+        <h3 id="modal-emp-title">新增同仁資料</h3>
+        <button class="btn-close-modal" id="btn-close-emp-modal">&times;</button>
+      </div>
+      <form id="form-employee">
+        <input type="hidden" id="emp-edit-original-id">
+        <div class="form-group">
+          <label for="emp-input-id">員工編號</label>
+          <input type="text" id="emp-input-id" required placeholder="例: E006">
+        </div>
+        <div class="form-group">
+          <label for="emp-input-name">同仁姓名</label>
+          <input type="text" id="emp-input-name" required placeholder="例: 黃放射">
+        </div>
+        <div class="form-group">
+          <label for="emp-input-title">職務／職稱</label>
+          <input type="text" id="emp-input-title" placeholder="例: 醫事放射師、組長">
+        </div>
+        <div class="form-group">
+          <label for="emp-input-role">角色權限</label>
+          <select id="emp-input-role">
+            <option value="user">一般同仁 (僅可線上預假與鎖檔)</option>
+            <option value="admin">主管 (具備刪除、修改與名額設定權限)</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="emp-input-hours">總年假時數 (小時)</label>
+          <input type="number" id="emp-input-hours" required min="0" value="80" step="1">
+        </div>
+        <div class="form-group">
+          <label for="emp-input-pwd">登入密碼 (明碼顯示)</label>
+          <input type="text" id="emp-input-pwd" required placeholder="預設密碼即員工編號" style="font-family: var(--font-mono); font-weight: 600; color: var(--accent-cyan);">
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn-secondary" id="btn-cancel-emp">取消</button>
+          <button type="button" id="btn-save-employee" class="btn-primary"><i class="fa-solid fa-floppy-disk"></i> 確認儲存</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal: 同仁檢視預假規則說明彈窗 -->
+  <div id="modal-rules" class="modal-overlay hidden">
+    <div class="modal-card glass-panel" style="max-width: 760px; max-height: 85vh; display: flex; flex-direction: column;">
+      <div class="modal-header" style="border-bottom: 1px solid var(--border-color); padding-bottom: 1rem;">
+        <h3 style="color: var(--accent-cyan);"><i class="fa-solid fa-book-bookmark"></i> 佳里奇美醫院 放射診斷科 預假規範與須知</h3>
+        <button class="btn-close-modal" id="btn-close-rules-modal">&times;</button>
+      </div>
+      <div id="rules-display-content" class="rules-markdown-body" style="padding: 1.25rem 0; overflow-y: auto; flex: 1; font-size: 0.95rem; line-height: 1.8; color: var(--text-main); white-space: pre-wrap;">
+        <!-- 主管公告之最新預假規則動態呈現 -->
+      </div>
+      <div class="modal-footer" style="border-top: 1px solid var(--border-color); padding-top: 0.75rem;">
+        <button type="button" class="btn-primary" id="btn-confirm-rules-modal">我已了解規則</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast 訊息通知 -->
+  <div id="toast-container" class="toast-wrapper"></div>
+
+  <script src="app.js"></script>
+</body>
+</html>
