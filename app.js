@@ -401,9 +401,8 @@
     const rawRules = localStorage.getItem(KEY_RULES);
     state.modelRules = rawRules ? JSON.parse(rawRules) : { ...DEFAULT_MODEL_RULES };
 
-    // 全新發布修訂版全科預假規範說明
-    state.rulesDoc = DEFAULT_RULES_DOC;
-    saveRulesDoc();
+    const rawDoc = localStorage.getItem(KEY_RULES_DOC);
+    state.rulesDoc = rawDoc ? rawDoc : DEFAULT_RULES_DOC;
 
     const rawYears = localStorage.getItem(KEY_ALLOWED_YEARS);
     state.allowedYears = rawYears ? JSON.parse(rawYears) : [2027];
@@ -438,6 +437,10 @@
 
   function saveModelRules() {
     localStorage.setItem(KEY_RULES, JSON.stringify(state.modelRules));
+  }
+
+  function saveRulesDoc() {
+    localStorage.setItem(KEY_RULES_DOC, state.rulesDoc);
   }
 
   function saveRulesDoc() {
@@ -727,6 +730,18 @@
     if (dom.btnTriggerImportEmp) {
       dom.btnTriggerImportEmp.addEventListener('click', () => dom.fileImportEmp.click());
       dom.fileImportEmp.addEventListener('change', handleImportEmployeeCSV);
+    }
+
+    // Admin Save Rules Doc (儲存與即時發布全科預假規範)
+    if (dom.btnSaveRulesDoc) {
+      dom.btnSaveRulesDoc.addEventListener('click', () => {
+        if (dom.adminRulesTextarea) {
+          state.rulesDoc = dom.adminRulesTextarea.value;
+          saveRulesDoc();
+          showToast('✅ 已成功儲存並同步發布最新全科預假規範說明！', 'success');
+          renderApp();
+        }
+      });
     }
 
     // Employee Modal Controls
