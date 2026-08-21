@@ -1566,6 +1566,79 @@
     return days[d.getDay()];
   }
 
+  // 主管手動幫同仁預假與特許強行預假處理常式
+  function handleAdminProxyBook() {
+    loadStorage();
+
+    const empId = dom.adminProxyEmpSelect ? dom.adminProxyEmpSelect.value : '';
+    const leaveDate = dom.adminProxyDateInput ? dom.adminProxyDateInput.value : '';
+
+    if (!empId) {
+      showToast('請先選擇要代為預假的同仁！', 'error');
+      return;
+    }
+    if (!leaveDate) {
+      showToast('請選擇要代為預假的日期！', 'error');
+      return;
+    }
+
+    const emp = state.employees.find(e => String(e.id).trim().toLowerCase() === String(empId).trim().toLowerCase());
+    if (!emp) {
+      showToast(`找不到員工編號【${empId}】的同仁資料！`, 'error');
+      return;
+    }
+
+    // 1. 檢核同仁剩餘年假時數
+    const empLeaves = state.leaves.filter(l => String(l.empId).trim().toLowerCase() === String(emp.id).trim().toLowerCase());
+    const bookedHours = empLeaves.reduce((sum, l) => sum + (l.hours || 8), 0);
+    const remHours = emp.totalHours - bookedHours;
+
+    if (remHours < 8) {
+      showToast(`預假失敗！同仁【${emp.name}】剩餘年假僅剩 ${remHours} 小時，不足 8 小時無法預扣假單！`, 'error');
+      return;
+    }
+
+    // 2. 檢核該同仁是否當天已預過假
+    const isAlreadyBooked = state.leaves.some(l => String(l.empId).trim().toLowerCase() === String(emp.id).trim().toLowerCase() && l.date === leaveDate);
+    if (isAlreadyBooked) {
+      showToast(`預假失敗！同仁【${emp.name}】在 ${leaveDate} 當天已經有預假紀錄囉！`, 'warning');
+      return;
+    }
+
+    // 3. 檢核該日期名額與額滿強行預假彈窗
+    const { limit } = getLimitForDate(leaveDate);
+    const dateLeaves = state.leaves.filter(l => l.date === leaveDate);
+    const isFull = dateLeaves.length >= limit;
+
+    // 若名額已滿，跳出指定要求的二次確認視窗
+    if (isFull) {
+      const isConfirmed = confirm('此日預假已額滿，是否確定強行預假？');
+      if (!isConfirmed) {
+        showToast('主管已取消強行預假操作。', 'info');
+        return;
+      }
+    }
+
+    // 4. 寫入新假單
+    const now = new Date();
+    const newLeave = {
+      id: 'leave_' + Date.now() + '_' + Math.random().toString(36).substr(2, 4),
+      empId: emp.id,
+      empName: emp.name,
+      date: leaveDate,
+      hours: 8,
+      status: 'locked',
+      createdAt: formatDateTime(now),
+      createdBy: state.currentUser ? state.currentUser.id : 'admin'
+    };
+
+    state.leaves.push(newLeave);
+    saveLeaves();
+
+    showToast(`✅ 主管已成功為同仁【${emp.name} (${emp.id})】完成 ${leaveDate} 之預假！${isFull ? ' (特許額滿強行預假)' : ''}`, 'success');
+    renderApp();
+  }
+
   // Toast Notification
   function showToast(msg, type = 'info') {
     const toast = document.createElement('div');
