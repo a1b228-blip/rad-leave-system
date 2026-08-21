@@ -550,24 +550,24 @@
         return;
       }
 
-      // 3. 嚴格驗證密碼 (正確密碼即為員工個人的 user.pwd 或預設員工編號 user.id)
-      const correctPwdClean = String(user.pwd || user.id).trim().toLowerCase();
-      const isPwdCorrect = (inputPwdClean === correctPwdClean) || (inputPwdClean === inputIdClean);
+      // 3. 嚴格驗證密碼：一切以主管在同仁編輯視窗中設定儲存的密碼 (user.pwd) 為唯一標準！
+      const targetPwdClean = String(user.pwd || user.id).trim().toLowerCase();
+      const isPwdCorrect = (inputPwdClean === targetPwdClean);
 
       if (isPwdCorrect) {
-        // 密碼正確，登入成功！
+        // 密碼比對 100% 正確，登入成功！
         state.currentUser = user;
         localStorage.setItem(KEY_SESSION, JSON.stringify({ id: user.id }));
         if (dom.loginErrorMsg) dom.loginErrorMsg.classList.add('hidden');
-        showToast(`登入成功！歡迎回來，${user.name} 同仁。`, 'success');
+        showToast(`登入成功！歡迎回來，${user.name} ${user.role === 'admin' ? '主管' : '同仁'}。`, 'success');
         renderApp();
       } else {
         // 密碼錯誤，嚴格拒絕登入！
         if (dom.loginErrorMsg) {
-          dom.loginErrorMsg.textContent = `登入失敗！密碼不正確，預設密碼為您的員工編號【${user.id}】。`;
+          dom.loginErrorMsg.textContent = `登入失敗！密碼不正確，請輸入主管為您設定的專屬登入密碼。`;
           dom.loginErrorMsg.classList.remove('hidden');
         }
-        showToast(`密碼錯誤！員工編號【${user.id}】的預設密碼為員工編號。`, 'error');
+        showToast(`登入失敗！密碼不正確，請輸入主管設定的專屬登入密碼。`, 'error');
       }
     });
 
