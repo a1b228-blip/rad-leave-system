@@ -1006,12 +1006,12 @@ code {
 .modal-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(11, 15, 25, 0.8);
-  backdrop-filter: blur(8px);
+  background: rgba(11, 15, 25, 0.85);
+  backdrop-filter: blur(10px);
   display: flex;
   justify-content: center;
   align-items: center;
-  z-index: 200;
+  z-index: 9999;
   padding: 20px;
 }
 

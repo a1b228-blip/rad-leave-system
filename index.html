@@ -10,7 +10,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <!-- FontAwesome Icons -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="styles.css?v=2027_v3">
 </head>
 <body>
   <!-- 背景裝飾微光效果 -->
@@ -468,13 +468,13 @@
                   <input type="date" id="admin-proxy-date-input" style="padding: 8px 12px; width: 100%;">
                 </div>
 
-                <div class="form-group inline-group" style="margin-bottom: 0; flex: 1; min-width: 180px;">
-                  <label for="admin-proxy-type-select" style="font-weight: 600; color: var(--accent-amber);">
+                <div class="form-group inline-group" style="margin-bottom: 0; flex: 1; min-width: 200px;">
+                  <label for="admin-proxy-type-select" style="font-weight: 700; color: #fbbf24;">
                     <i class="fa-solid fa-tags"></i> 3. 選擇預假假別：
                   </label>
-                  <select id="admin-proxy-type-select" style="padding: 8px 12px; width: 100%;">
-                    <option value="annual">🏖️ 一般年假 (扣 8 小時)</option>
-                    <option value="official">💼 公出/公假 (0 小時)</option>
+                  <select id="admin-proxy-type-select" style="padding: 8px 12px; width: 100%; border: 1.5px solid #fbbf24; background: rgba(245, 158, 11, 0.12); color: #fff; font-weight: 600; border-radius: 8px;">
+                    <option value="annual" style="background: #0f172a; color: #fff;">🏖️ 一般年假 (扣 8 小時)</option>
+                    <option value="official" style="background: #0f172a; color: #38bdf8;">💼 公出/公假 (0 小時)</option>
                   </select>
                 </div>
 
@@ -610,6 +610,6 @@
   <!-- Toast 訊息通知 -->
   <div id="toast-container" class="toast-wrapper"></div>
 
-  <script src="app.js"></script>
+  <script src="app.js?v=2027_v3"></script>
 </body>
 </html>
