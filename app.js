@@ -1267,9 +1267,13 @@
       dom.adminProxyEmpSelect.innerHTML = proxyOptionsHtml;
     }
 
-    if (dom.adminProxyDateInput && !dom.adminProxyDateInput.value) {
-      const defaultDateStr = `${state.currentYear}-${String(state.currentMonth + 1).padStart(2, '0')}-01`;
-      dom.adminProxyDateInput.value = defaultDateStr;
+    if (dom.adminProxyDateInput) {
+      dom.adminProxyDateInput.min = `${state.currentYear}-01-01`;
+      dom.adminProxyDateInput.max = `${state.currentYear}-12-31`;
+      if (!dom.adminProxyDateInput.value) {
+        const defaultDateStr = `${state.currentYear}-${String(state.currentMonth + 1).padStart(2, '0')}-01`;
+        dom.adminProxyDateInput.value = defaultDateStr;
+      }
     }
 
     // 3. Query & Render Single Employee Leaves by ID
