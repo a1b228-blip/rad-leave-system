@@ -1848,41 +1848,73 @@
       return a.id.localeCompare(b.id);
     });
 
-    // 生成 UTF-8 BOM CSV
-    let csvContent = '\uFEFF';
-    csvContent += `佳里奇美醫院 放射診斷科 工作人員預假派班表 (${year - 1911}年 / ${year}年 ${monthNum}月份)\n`;
-    
-    const dayHeaders = [];
-    for (let d = 1; d <= totalDays; d++) dayHeaders.push(d);
-    csvContent += `員工編號,姓名,${dayHeaders.join(',')},備註\n`;
-    csvContent += `星期,,${monthWeekdays.join(',')},\n`;
+    // 構建 AOA (Array of Arrays) 表格矩陣
+    const aoaData = [];
 
+    // Title Row
+    aoaData.push([`佳里奇美醫院 放射診斷科 工作人員月預假表 (${year - 1911}年 / ${year}年 ${monthNum}月份)`]);
+    
+    // Header Rows
+    const dayHeaders = [];
+    for (let d = 1; d <= totalDays; d++) dayHeaders.push(String(d));
+    aoaData.push(['員工編號', '姓名', ...dayHeaders, '備註']);
+    aoaData.push(['星期', '', ...monthWeekdays, '']);
+
+    // Employee Rows
     sortedEmployees.forEach(emp => {
       const empIdClean = String(emp.id).trim().toLowerCase();
       const empDayLeaves = leaveMap[empIdClean] || {};
       const rowVals = [emp.id, emp.name];
 
       for (let d = 1; d <= totalDays; d++) {
-        const symbol = empDayLeaves[d] || '';
-        rowVals.push(symbol);
+        rowVals.push(empDayLeaves[d] || '');
       }
       rowVals.push(''); // 備註
-      csvContent += rowVals.map(v => `"${v}"`).join(',') + '\n';
+      aoaData.push(rowVals);
     });
 
-    csvContent += '\n"育嬰留停人員：","楊恒宜、黃毓珊、邱怡庭"\n';
+    // Footer Rows
+    aoaData.push([]);
+    aoaData.push(['育嬰留停人員：', '楊恒宜、黃毓珊、邱怡庭']);
 
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `佳里奇美醫院_放射診斷科_${year}年${String(monthNum).padStart(2, '0')}月_工作人員預假派班表.csv`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
+    // 動態檔名連動當下年度與月份
+    const fileName = `佳里奇美醫院_放射診斷科_${year}年${String(monthNum).padStart(2, '0')}月_工作人員月預假表.xlsx`;
 
-    showToast(`已成功導出 ${year} 年 ${monthNum} 月份全科 1:1 派班預假 Excel 總表！`, 'success');
+    if (typeof XLSX !== 'undefined') {
+      // 支援 SheetJS 生成真實 .xlsx 檔案
+      const ws = XLSX.utils.aoa_to_sheet(aoaData);
+
+      // 設定欄寬
+      ws['!cols'] = [
+        { wch: 12 }, // 員工編號
+        { wch: 12 }  // 姓名
+      ];
+      for (let d = 1; d <= totalDays; d++) {
+        ws['!cols'].push({ wch: 4 });
+      }
+      ws['!cols'].push({ wch: 15 }); // 備註
+
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, `${monthNum}月預假表`);
+      XLSX.writeFile(wb, fileName);
+    } else {
+      // Fallback CSV 帶 UTF-8 BOM
+      let csvContent = '\uFEFF';
+      aoaData.forEach(row => {
+        csvContent += row.map(v => `"${v}"`).join(',') + '\n';
+      });
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = fileName.replace('.xlsx', '.csv');
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    }
+
+    showToast(`已成功下載本地端：${fileName}`, 'success');
   }
 
   // Toast Notification

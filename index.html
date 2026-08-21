@@ -10,7 +10,9 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <!-- FontAwesome Icons -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-  <link rel="stylesheet" href="styles.css?v=2027_v3">
+  <link rel="stylesheet" href="styles.css?v=2027_v4">
+  <!-- SheetJS Library for Pure JS .xlsx Generation -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 </head>
 <body>
   <!-- 背景裝飾微光效果 -->
@@ -278,11 +280,11 @@
             <div class="card-title-bar">
               <h3><i class="fa-solid fa-sliders"></i> 全科預假管理與資料匯出</h3>
               <div class="card-actions" style="display: flex; gap: 8px; flex-wrap: wrap;">
-                <button id="btn-export-roster-excel" class="btn-primary" style="background: linear-gradient(135deg, #10b981, #059669); border: none; font-weight: 600;">
-                  <i class="fa-solid fa-file-excel"></i> 導出 1:1 派班表 Excel / CSV
+                <button id="btn-export-roster-excel" class="btn-primary" style="background: linear-gradient(135deg, #10b981, #059669); border: none; font-weight: 600; padding: 10px 18px;">
+                  <i class="fa-solid fa-file-excel"></i> 匯出月預假表 Excel
                 </button>
-                <button id="btn-export-excel" class="btn-success">
-                  <i class="fa-solid fa-file-csv"></i> 匯出平鋪清單 CSV
+                <button id="btn-export-excel" class="btn-secondary btn-sm" style="display: none;">
+                  <i class="fa-solid fa-file-csv"></i> 匯出清單 CSV
                 </button>
               </div>
             </div>
@@ -614,6 +616,6 @@
   <!-- Toast 訊息通知 -->
   <div id="toast-container" class="toast-wrapper"></div>
 
-  <script src="app.js?v=2027_v3"></script>
+  <script src="app.js?v=2027_v4"></script>
 </body>
 </html>
