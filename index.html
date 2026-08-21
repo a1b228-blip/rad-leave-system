@@ -149,6 +149,12 @@
           <span>【主管公告】目前 <strong id="locked-banner-year-text" style="font-size: 1.1rem; text-decoration: underline;">2028</strong> 年度的線上預假功能已被主管關閉鎖定，暫不開放同仁發起搶預假。</span>
         </div>
 
+        <!-- 每月 15 號自動鎖定警示 Banner -->
+        <div id="calendar-15th-locked-banner" class="hidden" style="background: rgba(245, 158, 11, 0.15); border: 1px solid rgba(245, 158, 11, 0.4); color: #fbbf24; padding: 12px 18px; border-radius: 12px; margin-bottom: 1.25rem; font-weight: 600; display: flex; align-items: center; gap: 10px; box-shadow: 0 4px 15px rgba(245, 158, 11, 0.15);">
+          <i class="fa-solid fa-lock-keyhole" style="font-size: 1.3rem;"></i>
+          <span>【排班關閉公告】目前已超過每月 15 號（排班結算截止日），系統已自動關閉 <strong id="locked-15th-month-text" style="font-size: 1.1rem; text-decoration: underline;">下月份</strong> 之自主預假。如需預假請向主管提出申請，由主管代為預假。</span>
+        </div>
+
         <div class="calendar-header-panel glass-panel">
           <div class="calendar-controls">
             <button id="btn-prev-month" class="btn-icon"><i class="fa-solid fa-chevron-left"></i></button>
@@ -433,6 +439,44 @@
               <i class="fa-solid fa-magnifying-glass"></i> 請於上方選擇或輸入員工編號，系統將只列出該同仁的預假日期。
             </div>
           </div>
+
+          <!-- 主管功能區 3.5: 主管手動代同仁預假與特許強行預假管理 -->
+          <div class="admin-card glass-panel span-2" id="admin-proxy-book-card">
+            <div class="card-title-bar">
+              <h3><i class="fa-solid fa-user-pen"></i> 主管手動代同仁預假與特許強行預假管理</h3>
+            </div>
+            <div style="padding: 1rem 0;">
+              <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 1.25rem;">
+                <i class="fa-solid fa-shield-halved"></i> 當每月 15 號自主預假關閉、或同仁提出特殊預假申請時，主管可於此手動選取同仁與日期代掛假單。若當日預假名額已滿，系統將警示並允許主管特許強行預假。
+              </p>
+
+              <div style="display: flex; align-items: flex-end; gap: 1.25rem; flex-wrap: wrap;">
+                <div class="form-group inline-group" style="margin-bottom: 0; flex: 1; min-width: 260px;">
+                  <label for="admin-proxy-emp-select" style="font-weight: 600; color: var(--accent-cyan);">
+                    <i class="fa-solid fa-user"></i> 1. 選擇要代預假的同仁：
+                  </label>
+                  <select id="admin-proxy-emp-select" style="padding: 8px 12px; width: 100%;">
+                    <option value="">-- 請選擇同仁 (顯示姓名與剩餘年假時數) --</option>
+                    <!-- 動態載入全科同仁選單 -->
+                  </select>
+                </div>
+
+                <div class="form-group inline-group" style="margin-bottom: 0; flex: 1; min-width: 220px;">
+                  <label for="admin-proxy-date-input" style="font-weight: 600; color: var(--accent-teal);">
+                    <i class="fa-solid fa-calendar-day"></i> 2. 選擇預假日期：
+                  </label>
+                  <input type="date" id="admin-proxy-date-input" style="padding: 8px 12px; width: 100%;">
+                </div>
+
+                <div style="margin-bottom: 0;">
+                  <button id="btn-admin-proxy-book" class="btn-primary" style="background: linear-gradient(135deg, #06b6d4, #3b82f6); border: none; padding: 10px 20px; font-weight: 600;">
+                    <i class="fa-solid fa-plus-circle"></i> 幫同仁手動預假
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+
           <!-- 主管功能區 4: 編輯與即時發布全科預假規範說明 -->
           <div class="admin-card glass-panel span-2" id="admin-rules-card">
             <div class="card-title-bar">

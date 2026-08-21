@@ -83,6 +83,35 @@
     };
   }
 
+  /**
+   * 判斷目前檢視的年月是否觸發「每月 15 號起自動鎖定下個月自主預假」規則
+   * @param {number} year 檢視年度 (例 2027)
+   * @param {number} month 檢視月份 (0-indexed, 0 = 1月)
+   * @returns {boolean} 是否受 15 號自動鎖定
+   */
+  function isTargetMonthLockedBy15thRule(year, month) {
+    const now = new Date();
+    const realYear = now.getFullYear();
+    const realMonth = now.getMonth(); // 0 - 11
+    const realDate = now.getDate();
+
+    // 當實際日期 >= 15 號時，鎖定下一個月份
+    if (realDate >= 15) {
+      let lockedYear = realYear;
+      let lockedMonth = realMonth + 1;
+      if (lockedMonth > 11) {
+        lockedMonth = 0;
+        lockedYear += 1;
+      }
+
+      // 若目前檢視的年月剛好是受鎖定的下一個月份
+      if (year === lockedYear && month === lockedMonth) {
+        return true;
+      }
+    }
+    return false;
+  }
+
   // Default Presets for Radiology Department (Official Staff Roster from Duty Roster)
   const DEFAULT_EMPLOYEES = [
     { id: '911050', name: '同仁(911050)', role: 'user',  totalHours: 120, pwd: '911050' },
@@ -232,10 +261,19 @@
     dom.btnTriggerImportEmp = document.getElementById('btn-trigger-import-emp');
     dom.fileImportEmp = document.getElementById('file-import-emp');
 
+    // 15 號鎖定 Banner
+    dom.calendar15thLockedBanner = document.getElementById('calendar-15th-locked-banner');
+    dom.locked15thMonthText = document.getElementById('locked-15th-month-text');
+
     // 個別員工編號預假查詢與解鎖
     dom.adminFilterEmpSelect = document.getElementById('admin-filter-emp-select');
     dom.adminFilterEmpInput = document.getElementById('admin-filter-emp-input');
     dom.adminLeavesEmptyTip = document.getElementById('admin-leaves-empty-tip');
+
+    // 主管手動代預假元件
+    dom.adminProxyEmpSelect = document.getElementById('admin-proxy-emp-select');
+    dom.adminProxyDateInput = document.getElementById('admin-proxy-date-input');
+    dom.btnAdminProxyBook = document.getElementById('btn-admin-proxy-book');
 
     // 4 種日期類型模型
     dom.limitWeekday = document.getElementById('limit-weekday');
@@ -683,6 +721,11 @@
       });
     }
 
+    // 主管手動代同仁預假按鈕事件
+    if (dom.btnAdminProxyBook) {
+      dom.btnAdminProxyBook.addEventListener('click', handleAdminProxyBook);
+    }
+
     // Cross-tab & Multi-window Realtime Synchronization
     window.addEventListener('storage', (e) => {
       if (e.key === KEY_LEAVES || e.key === KEY_LIMITS || e.key === KEY_EMPLOYEES || e.key === KEY_LOCKED_YEARS || e.key === KEY_ALLOWED_YEARS) {
@@ -781,6 +824,17 @@
       }
     }
 
+    // 檢核每月 15 號自動鎖定下個月預假規則
+    const is15thLocked = isTargetMonthLockedBy15thRule(year, month);
+    if (dom.calendar15thLockedBanner) {
+      if (is15thLocked && state.currentUser && state.currentUser.role !== 'admin') {
+        dom.calendar15thLockedBanner.classList.remove('hidden');
+        if (dom.locked15thMonthText) dom.locked15thMonthText.textContent = `${year} 年 ${month + 1} 月`;
+      } else {
+        dom.calendar15thLockedBanner.classList.add('hidden');
+      }
+    }
+
     dom.monthDisplay.textContent = `${year} 年 ${month + 1} 月`;
     dom.calendarDays.innerHTML = '';
 
@@ -817,7 +871,7 @@
       // Determine state class
       if (isMyBooked) {
         dayCell.classList.add('state-my-booked');
-      } else if (isFull || isYearLocked) {
+      } else if (isFull || isYearLocked || (is15thLocked && state.currentUser && state.currentUser.role !== 'admin')) {
         dayCell.classList.add('state-full');
       } else {
         dayCell.classList.add('state-available');
@@ -858,7 +912,7 @@
         `;
       }
 
-      // Action Button Html (若年度已被主管關閉鎖定，強制停用所有搶假按鈕)
+      // Action Button Html (若年度已被主管關閉鎖定，或已過 15 號自動鎖定，一般同仁停用搶假按鈕)
       let actionBtnHtml = '';
       if (isYearLocked) {
         actionBtnHtml = `
@@ -873,6 +927,13 @@
             <span class="desktop-text"><i class="fa-solid fa-lock"></i> 我的預假 (鎖檔)</span>
             <span class="mobile-text"><i class="fa-solid fa-check"></i> 已預假</span>
           </div>
+        `;
+      } else if (is15thLocked && state.currentUser && state.currentUser.role !== 'admin') {
+        actionBtnHtml = `
+          <button class="btn-day-action btn-disabled-full" disabled style="background: rgba(245, 158, 11, 0.15); border: 1px solid rgba(245, 158, 11, 0.4); color: #fbbf24;">
+            <span class="desktop-text"><i class="fa-solid fa-lock"></i> 15號起關閉 (須向主管申請)</span>
+            <span class="mobile-text"><i class="fa-solid fa-lock"></i> 15號關閉</span>
+          </button>
         `;
       } else if (isFull) {
         actionBtnHtml = `
@@ -1186,12 +1247,29 @@
       });
     });
 
-    // 2. Populate Employee Select Filter Options
+    // 2. Populate Employee Select Filter Options & Proxy Booking Dropdown
     if (dom.adminFilterEmpSelect) {
       const currentSelected = dom.adminFilterEmpSelect.value;
       const optionsHtml = '<option value="">-- 請選擇同仁 (顯示姓名與編號) --</option>' + 
         sortedEmployees.map(e => `<option value="${e.id}" ${String(e.id).toLowerCase() === String(currentSelected).toLowerCase() ? 'selected' : ''}>${e.name} (${e.id}) ${e.role === 'admin' ? '[主管]' : ''}</option>`).join('');
       dom.adminFilterEmpSelect.innerHTML = optionsHtml;
+    }
+
+    if (dom.adminProxyEmpSelect) {
+      const currentProxySelected = dom.adminProxyEmpSelect.value;
+      const proxyOptionsHtml = '<option value="">-- 請選擇同仁 (顯示姓名與剩餘年假時數) --</option>' + 
+        sortedEmployees.map(e => {
+          const empLeaves = state.leaves.filter(l => l.empId === e.id);
+          const bookedHours = empLeaves.reduce((sum, l) => sum + l.hours, 0);
+          const remHours = e.totalHours - bookedHours;
+          return `<option value="${e.id}" ${String(e.id).toLowerCase() === String(currentProxySelected).toLowerCase() ? 'selected' : ''}>${e.name} (${e.id}) - 剩餘 ${remHours} 小時年假 ${e.role === 'admin' ? '[主管]' : ''}</option>`;
+        }).join('');
+      dom.adminProxyEmpSelect.innerHTML = proxyOptionsHtml;
+    }
+
+    if (dom.adminProxyDateInput && !dom.adminProxyDateInput.value) {
+      const defaultDateStr = `${state.currentYear}-${String(state.currentMonth + 1).padStart(2, '0')}-01`;
+      dom.adminProxyDateInput.value = defaultDateStr;
     }
 
     // 3. Query & Render Single Employee Leaves by ID
