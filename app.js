@@ -507,7 +507,7 @@
       });
     }
 
-    // Login Form Submit (零障礙極致登入驗證)
+    // Login Form Submit (嚴謹安全登入驗證：密碼預設員工編號，錯誤嚴格禁止登入)
     dom.loginForm.addEventListener('submit', (e) => {
       e.preventDefault();
       loadStorage(); // 確保讀取最新同仁名冊
@@ -519,11 +519,15 @@
         showToast('請輸入員工編號！', 'error');
         return;
       }
+      if (!pwdInput) {
+        showToast('請輸入密碼！預設密碼為您的員工編號。', 'error');
+        return;
+      }
 
       const inputIdClean = idInput.toLowerCase();
       const inputPwdClean = pwdInput.toLowerCase();
 
-      // 1. 先從當前 LocalStorage 名冊尋找同仁 (忽略大小寫)
+      // 1. 從當前 LocalStorage 名冊尋找同仁 (不分大小寫與前後空格)
       let user = state.employees.find(emp => String(emp.id).trim().toLowerCase() === inputIdClean);
 
       // 2. 若 LocalStorage 中找不到，從 27 位預設名冊中尋找並補回
@@ -536,36 +540,35 @@
         }
       }
 
-      // 3. 登入驗證關卡 (極致彈性相容)
-      // 只要同仁帳號存在，且符合以下任一條件即 100% 登入成功：
-      // (A) 密碼比對一致
-      // (B) 密碼等於員工編號 (預設密碼)
-      // (C) 密碼輸入與帳號一致 (忽略大小寫)
-      if (user) {
-        const empPwdClean = String(user.pwd || user.id).trim().toLowerCase();
-        const isPwdCorrect = (inputPwdClean === empPwdClean) || 
-                             (inputPwdClean === inputIdClean) || 
-                             (empPwdClean === inputIdClean);
-
-        if (isPwdCorrect || pwdInput.length > 0) {
-          // 強制修正密碼一致性
-          if (user.pwd !== pwdInput && pwdInput) {
-            user.pwd = pwdInput;
-            saveEmployees();
-          }
-
-          state.currentUser = user;
-          localStorage.setItem(KEY_SESSION, JSON.stringify({ id: user.id }));
-          if (dom.loginErrorMsg) dom.loginErrorMsg.classList.add('hidden');
-          showToast(`登入成功！歡迎回來，${user.name} 同仁。`, 'success');
-          renderApp();
-          return;
+      // 若完全查無此員工編號
+      if (!user) {
+        if (dom.loginErrorMsg) {
+          dom.loginErrorMsg.textContent = `登入失敗！查無員工編號【${idInput}】，請確認輸入是否正確。`;
+          dom.loginErrorMsg.classList.remove('hidden');
         }
+        showToast(`登入失敗！查無員工編號【${idInput}】！`, 'error');
+        return;
       }
 
-      // 若完全無此員工編號
-      if (dom.loginErrorMsg) dom.loginErrorMsg.classList.remove('hidden');
-      showToast(`登入失敗！查無員工編號【${idInput}】，請確認輸入是否正確。`, 'error');
+      // 3. 嚴格驗證密碼 (正確密碼即為員工個人的 user.pwd 或預設員工編號 user.id)
+      const correctPwdClean = String(user.pwd || user.id).trim().toLowerCase();
+      const isPwdCorrect = (inputPwdClean === correctPwdClean) || (inputPwdClean === inputIdClean);
+
+      if (isPwdCorrect) {
+        // 密碼正確，登入成功！
+        state.currentUser = user;
+        localStorage.setItem(KEY_SESSION, JSON.stringify({ id: user.id }));
+        if (dom.loginErrorMsg) dom.loginErrorMsg.classList.add('hidden');
+        showToast(`登入成功！歡迎回來，${user.name} 同仁。`, 'success');
+        renderApp();
+      } else {
+        // 密碼錯誤，嚴格拒絕登入！
+        if (dom.loginErrorMsg) {
+          dom.loginErrorMsg.textContent = `登入失敗！密碼不正確，預設密碼為您的員工編號【${user.id}】。`;
+          dom.loginErrorMsg.classList.remove('hidden');
+        }
+        showToast(`密碼錯誤！員工編號【${user.id}】的預設密碼為員工編號。`, 'error');
+      }
     });
 
     // Logout
