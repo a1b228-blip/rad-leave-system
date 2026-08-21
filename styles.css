@@ -143,13 +143,13 @@ code {
 }
 
 /* ==========================================================================
-   1. Login Modal Styles
+   1. Login Modal Styles (Glassmorphism 2.0 & Medical Tech Visual Upgrade)
    ========================================================================== */
 .login-overlay {
   position: fixed;
   inset: 0;
-  background: linear-gradient(135deg, rgba(11, 15, 25, 0.72), rgba(15, 23, 42, 0.85)), url('radiology_bg.jpg') no-repeat center center / cover;
-  backdrop-filter: blur(8px);
+  background: radial-gradient(circle at 50% 40%, rgba(15, 23, 42, 0.65) 0%, rgba(11, 15, 25, 0.95) 100%), url('radiology_bg.jpg') no-repeat center center / cover;
+  backdrop-filter: blur(12px);
   display: flex;
   justify-content: center;
   align-items: center;
@@ -160,74 +160,118 @@ code {
 .login-card {
   width: 100%;
   max-width: 440px;
-  padding: 2.5rem;
-  border: 1px solid rgba(255, 255, 255, 0.15);
-  animation: fadeInDown 0.4s ease-out;
+  padding: 2.75rem 2.25rem;
+  background: rgba(15, 23, 42, 0.78) !important;
+  backdrop-filter: blur(20px) saturate(180%) !important;
+  -webkit-backdrop-filter: blur(20px) saturate(180%) !important;
+  border: 1.5px solid rgba(56, 189, 248, 0.3) !important;
+  border-radius: 24px !important;
+  box-shadow: 0 25px 60px rgba(0, 0, 0, 0.75), 0 0 35px rgba(56, 189, 248, 0.18), inset 0 1px 0 rgba(255, 255, 255, 0.2) !important;
+  animation: fadeInDown 0.45s cubic-bezier(0.16, 1, 0.3, 1);
+  position: relative;
+  overflow: hidden;
+}
+
+.login-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: linear-gradient(90deg, #06b6d4, #38bdf8, #818cf8);
 }
 
 .brand-header {
   text-align: center;
-  margin-bottom: 2rem;
+  margin-bottom: 2.25rem;
 }
 
-.brand-logo {
-  width: 64px;
-  height: 64px;
-  margin: 0 auto 1rem;
-  background: linear-gradient(135deg, var(--accent-cyan), var(--accent-purple));
-  border-radius: 16px;
+.brand-logo.glow-logo {
+  width: 68px;
+  height: 68px;
+  margin: 0 auto 1.25rem;
+  background: linear-gradient(135deg, #06b6d4, #3b82f6);
+  border-radius: 20px;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 2rem;
+  font-size: 2.2rem;
   color: white;
-  box-shadow: 0 8px 20px rgba(6, 182, 212, 0.3);
+  box-shadow: 0 10px 25px rgba(6, 182, 212, 0.45), 0 0 15px rgba(56, 189, 248, 0.3);
+  animation: logoPulse 4s infinite ease-in-out;
 }
 
-.brand-header h2 {
+@keyframes logoPulse {
+  0%, 100% { transform: scale(1); box-shadow: 0 10px 25px rgba(6, 182, 212, 0.45), 0 0 15px rgba(56, 189, 248, 0.3); }
+  50% { transform: scale(1.04); box-shadow: 0 14px 30px rgba(6, 182, 212, 0.65), 0 0 25px rgba(56, 189, 248, 0.5); }
+}
+
+.gradient-title {
   font-family: var(--font-heading);
-  font-size: 1.5rem;
-  font-weight: 700;
-  color: var(--text-main);
+  font-size: 1.6rem;
+  font-weight: 800;
+  background: linear-gradient(135deg, #ffffff 0%, #38bdf8 65%, #818cf8 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  letter-spacing: -0.5px;
+  margin-bottom: 2px;
 }
 
 .subtitle {
   color: var(--text-muted);
-  font-size: 0.875rem;
-  margin-top: 4px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 1px;
+  text-transform: uppercase;
 }
 
-/* Forms */
+.brand-badge-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 10px;
+  padding: 4px 12px;
+  background: rgba(56, 189, 248, 0.12);
+  color: #38bdf8;
+  border: 1px solid rgba(56, 189, 248, 0.3);
+  border-radius: 20px;
+  font-size: 0.78rem;
+  font-weight: 600;
+}
+
+/* Forms Input Enhancements */
 .form-group {
-  margin-bottom: 1.25rem;
+  margin-bottom: 1.35rem;
 }
 
 .form-group label {
   display: block;
-  font-size: 0.875rem;
-  font-weight: 500;
-  color: var(--text-muted);
-  margin-bottom: 0.5rem;
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: var(--text-main);
+  margin-bottom: 0.55rem;
 }
 
 .form-group input,
 .form-group select {
   width: 100%;
-  padding: 0.75rem 1rem;
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid var(--border-color);
-  border-radius: 10px;
+  padding: 0.8rem 1rem;
+  background: rgba(15, 23, 42, 0.65);
+  border: 1.5px solid rgba(255, 255, 255, 0.12);
+  border-radius: 12px;
   color: var(--text-main);
   font-size: 0.95rem;
   outline: none;
-  transition: var(--transition-fast);
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .form-group input:focus,
 .form-group select:focus {
-  border-color: var(--accent-cyan);
-  box-shadow: 0 0 0 3px rgba(6, 182, 212, 0.2);
-  background: rgba(255, 255, 255, 0.08);
+  border-color: #38bdf8;
+  box-shadow: 0 0 0 4px rgba(56, 189, 248, 0.22), 0 0 16px rgba(56, 189, 248, 0.12);
+  background: rgba(15, 23, 42, 0.85);
+  transform: translateY(-1.5px);
 }
 
 .password-wrapper {
@@ -242,8 +286,15 @@ code {
   background: none;
   border: none;
   color: var(--text-muted);
+  font-size: 1.1rem;
   cursor: pointer;
   padding: 4px;
+  transition: all 0.2s ease;
+}
+
+.btn-toggle-pwd:hover {
+  color: #38bdf8;
+  transform: translateY(-50%) scale(1.18);
 }
 
 .quick-login-info {
