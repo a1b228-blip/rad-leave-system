@@ -170,6 +170,7 @@
 
   // DOM Cache
   const dom = {};
+  let pendingBookingDate = null;
 
   // Initialize Application
   function init() {
@@ -273,7 +274,15 @@
     // 主管手動代預假元件
     dom.adminProxyEmpSelect = document.getElementById('admin-proxy-emp-select');
     dom.adminProxyDateInput = document.getElementById('admin-proxy-date-input');
+    dom.adminProxyTypeSelect = document.getElementById('admin-proxy-type-select');
     dom.btnAdminProxyBook = document.getElementById('btn-admin-proxy-book');
+
+    // 同仁預假假別選擇 Modal
+    dom.modalLeaveType = document.getElementById('modal-leave-type');
+    dom.leaveTypeModalDateText = document.getElementById('leave-type-modal-date-text');
+    dom.btnCloseLeaveTypeModal = document.getElementById('btn-close-leave-type-modal');
+    dom.btnCancelLeaveType = document.getElementById('btn-cancel-leave-type');
+    dom.btnConfirmLeaveType = document.getElementById('btn-confirm-leave-type');
 
     // 4 種日期類型模型
     dom.limitWeekday = document.getElementById('limit-weekday');
@@ -726,6 +735,11 @@
       dom.btnAdminProxyBook.addEventListener('click', handleAdminProxyBook);
     }
 
+    // 同仁發起預假假別彈窗控制
+    if (dom.btnCloseLeaveTypeModal) dom.btnCloseLeaveTypeModal.addEventListener('click', () => dom.modalLeaveType.classList.add('hidden'));
+    if (dom.btnCancelLeaveType) dom.btnCancelLeaveType.addEventListener('click', () => dom.modalLeaveType.classList.add('hidden'));
+    if (dom.btnConfirmLeaveType) dom.btnConfirmLeaveType.addEventListener('click', confirmLeaveBooking);
+
     // Cross-tab & Multi-window Realtime Synchronization
     window.addEventListener('storage', (e) => {
       if (e.key === KEY_LEAVES || e.key === KEY_LIMITS || e.key === KEY_EMPLOYEES || e.key === KEY_LOCKED_YEARS || e.key === KEY_ALLOWED_YEARS) {
@@ -785,7 +799,7 @@
 
     // 3. Calculate Hours & Stats
     const userLeaves = state.leaves.filter(l => l.empId === user.id);
-    const bookedHours = userLeaves.reduce((sum, l) => sum + (l.hours || 8), 0);
+    const bookedHours = userLeaves.reduce((sum, l) => sum + (l.leaveType === 'official' ? 0 : (l.hours || 0)), 0);
     const totalHours = user.totalHours || 120;
     const remainingHours = Math.max(0, totalHours - bookedHours);
 
@@ -882,7 +896,9 @@
       if (dateLeaves.length > 0) {
         const listItems = dateLeaves.map(l => {
           const isMe = l.empId === state.currentUser.id;
-          return `<li class="${isMe ? 'is-me-item' : ''}"><i class="fa-solid fa-user-check"></i> ${l.empName} <code>${l.empId}</code> ${isMe ? '<span class="badge-me">我</span>' : ''}</li>`;
+          const isOfficial = l.leaveType === 'official' || l.hours === 0;
+          const tagHtml = isOfficial ? '<span class="badge" style="background: rgba(56, 189, 248, 0.2); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.4); margin-left: 4px; font-size: 0.72rem; padding: 1px 5px;">💼公出</span>' : '';
+          return `<li class="${isMe ? 'is-me-item' : ''}"><i class="fa-solid fa-user-check"></i> ${l.empName} <code>${l.empId}</code> ${tagHtml} ${isMe ? '<span class="badge-me">我</span>' : ''}</li>`;
         }).join('');
 
         bookedDropdownHtml = `
@@ -985,9 +1001,8 @@
     });
   }
 
-  // Handle Booking Leave (先搶先贏 & 時數扣除)
+  // Handle Booking Leave (先搶先贏：開啟假別選擇 Modal 彈窗)
   function handleBookLeave(dateStr) {
-    // 寫入前先重新載入最新資料，進行二階段並發校驗
     loadStorage();
 
     const bookingYear = parseInt(dateStr.split('-')[0], 10);
@@ -998,24 +1013,14 @@
     }
 
     const user = state.currentUser;
-    const userLeaves = state.leaves.filter(l => l.empId === user.id);
-    const bookedHours = userLeaves.reduce((sum, l) => sum + l.hours, 0);
-    const remainingHours = user.totalHours - bookedHours;
-
-    // 1. Check Hours
-    if (remainingHours < 8) {
-      showToast(`預假失敗！您的剩餘年假只有 ${remainingHours} 小時，不足以預扣全天假 (8 小時)。`, 'error');
-      return;
-    }
-
-    // 2. Check if already booked
+    // 1. Check if already booked
     const existing = state.leaves.find(l => l.date === dateStr && l.empId === user.id);
     if (existing) {
       showToast('您在此日期已經完成預假，無法重複預假！', 'error');
       return;
     }
 
-    // 3. Check Limit
+    // 2. Check Limit
     const dateLeaves = state.leaves.filter(l => l.date === dateStr);
     const { limit, type } = getLimitForDate(dateStr);
 
@@ -1025,13 +1030,69 @@
       return;
     }
 
-    // 4. Perform Booking Transaction
+    // 3. Open Leave Type Modal
+    pendingBookingDate = dateStr;
+    if (dom.leaveTypeModalDateText) dom.leaveTypeModalDateText.textContent = dateStr;
+    if (dom.modalLeaveType) dom.modalLeaveType.classList.remove('hidden');
+  }
+
+  // 同仁在 Modal 點擊確認預假：寫入假單交易
+  function confirmLeaveBooking() {
+    if (!pendingBookingDate) {
+      if (dom.modalLeaveType) dom.modalLeaveType.classList.add('hidden');
+      return;
+    }
+
+    loadStorage();
+    const dateStr = pendingBookingDate;
+    const user = state.currentUser;
+
+    // 取得選取的假別
+    const radioEl = document.querySelector('input[name="leave-type-radio"]:checked');
+    const selectedType = radioEl ? radioEl.value : 'annual';
+    const isOfficial = selectedType === 'official';
+    const hours = isOfficial ? 0 : 8;
+
+    // 若為一般年假，檢核剩餘年假時數
+    if (!isOfficial) {
+      const userLeaves = state.leaves.filter(l => l.empId === user.id);
+      const bookedHours = userLeaves.reduce((sum, l) => sum + (l.leaveType === 'official' ? 0 : (l.hours || 0)), 0);
+      const remainingHours = user.totalHours - bookedHours;
+
+      if (remainingHours < 8) {
+        showToast(`預假失敗！您的剩餘年假只有 ${remainingHours} 小時，不足以預扣一般年假 (8 小時)。`, 'error');
+        if (dom.modalLeaveType) dom.modalLeaveType.classList.add('hidden');
+        return;
+      }
+    }
+
+    // 檢查是否重複預假
+    const existing = state.leaves.find(l => l.date === dateStr && l.empId === user.id);
+    if (existing) {
+      showToast('您在此日期已經完成預假，無法重複預假！', 'error');
+      if (dom.modalLeaveType) dom.modalLeaveType.classList.add('hidden');
+      return;
+    }
+
+    // 檢查名額
+    const dateLeaves = state.leaves.filter(l => l.date === dateStr);
+    const { limit, type } = getLimitForDate(dateStr);
+
+    if (dateLeaves.length >= limit) {
+      showToast(`搶假失敗！該日期 (${type}) 預假人數已達到上限 (${limit} 人)。`, 'error');
+      if (dom.modalLeaveType) dom.modalLeaveType.classList.add('hidden');
+      renderCalendar();
+      return;
+    }
+
+    // 執行寫入假單
     const newLeave = {
       id: `L-${dateStr.replace(/-/g, '')}-${user.id}`,
       date: dateStr,
       empId: user.id,
       empName: user.name,
-      hours: 8,
+      leaveType: selectedType,
+      hours: hours,
       createdAt: formatDateTime(new Date()),
       status: 'locked'
     };
@@ -1039,7 +1100,10 @@
     state.leaves.push(newLeave);
     saveLeaves();
 
-    showToast(`搶假成功！已為您預扣 8 小時年假，並即時完成假單鎖檔。`, 'success');
+    if (dom.modalLeaveType) dom.modalLeaveType.classList.add('hidden');
+    pendingBookingDate = null;
+
+    showToast(`搶假成功！已完成 ${dateStr} 之【${isOfficial ? '💼 公出/公假 (0小時)' : '🏖️ 一般年假 (預扣8小時)'}】預假鎖檔！`, 'success');
     renderApp();
   }
 
@@ -1057,11 +1121,15 @@
     dom.myLeavesEmpty.classList.add('hidden');
     dom.myLeavesList.innerHTML = userLeaves.map(l => {
       const dayOfWeekStr = getDayOfWeekStr(l.date);
+      const isOfficial = l.leaveType === 'official' || l.hours === 0;
+      const typeBadge = isOfficial 
+        ? '<span class="badge" style="background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.4); font-weight:600;">💼 公出 (0 小時)</span>'
+        : `<span class="badge badge-year">- ${l.hours || 8} 小時 (年假)</span>`;
       return `
         <tr>
           <td><strong>${l.date}</strong></td>
           <td>${dayOfWeekStr}</td>
-          <td><span class="badge badge-year">- ${l.hours} 小時</span></td>
+          <td>${typeBadge}</td>
           <td>${l.createdAt}</td>
           <td><span class="badge badge-locked"><i class="fa-solid fa-lock"></i> 線上鎖檔中 (不可更動)</span></td>
           <td>
@@ -1173,7 +1241,7 @@
 
     dom.adminEmpTable.innerHTML = sortedEmployees.map(emp => {
       const empLeaves = state.leaves.filter(l => l.empId === emp.id);
-      const bookedHours = empLeaves.reduce((sum, l) => sum + l.hours, 0);
+      const bookedHours = empLeaves.reduce((sum, l) => sum + (l.leaveType === 'official' ? 0 : (l.hours || 0)), 0);
       const remHours = emp.totalHours - bookedHours;
 
       return `
@@ -1260,7 +1328,7 @@
       const proxyOptionsHtml = '<option value="">-- 請選擇同仁 (顯示姓名與剩餘年假時數) --</option>' + 
         sortedEmployees.map(e => {
           const empLeaves = state.leaves.filter(l => l.empId === e.id);
-          const bookedHours = empLeaves.reduce((sum, l) => sum + l.hours, 0);
+          const bookedHours = empLeaves.reduce((sum, l) => sum + (l.leaveType === 'official' ? 0 : (l.hours || 0)), 0);
           const remHours = e.totalHours - bookedHours;
           return `<option value="${e.id}" ${String(e.id).toLowerCase() === String(currentProxySelected).toLowerCase() ? 'selected' : ''}>${e.name} (${e.id}) - 剩餘 ${remHours} 小時年假 ${e.role === 'admin' ? '[主管]' : ''}</option>`;
         }).join('');
@@ -1303,11 +1371,15 @@
 
         dom.adminAllLeavesTable.innerHTML = targetLeaves.map(l => {
           const dayOfWeekStr = getDayOfWeekStr(l.date);
+          const isOfficial = l.leaveType === 'official' || l.hours === 0;
+          const typeBadge = isOfficial 
+            ? '<span class="badge" style="background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.4); font-weight:600;">💼 公出 (0 小時)</span>'
+            : `<span class="badge badge-year">- ${l.hours || 8} 小時 (年假)</span>`;
           return `
             <tr>
               <td><strong>${l.date}</strong></td>
               <td>${dayOfWeekStr}</td>
-              <td><span class="badge badge-year">- ${l.hours} 小時</span></td>
+              <td>${typeBadge}</td>
               <td>${l.createdAt}</td>
               <td><span class="badge badge-locked"><i class="fa-solid fa-shield-halved"></i> 已線上鎖檔</span></td>
               <td>
@@ -1576,6 +1648,9 @@
 
     const empId = dom.adminProxyEmpSelect ? dom.adminProxyEmpSelect.value : '';
     const leaveDate = dom.adminProxyDateInput ? dom.adminProxyDateInput.value : '';
+    const selectedType = dom.adminProxyTypeSelect ? dom.adminProxyTypeSelect.value : 'annual';
+    const isOfficial = selectedType === 'official';
+    const hours = isOfficial ? 0 : 8;
 
     if (!empId) {
       showToast('請先選擇要代為預假的同仁！', 'error');
@@ -1592,14 +1667,16 @@
       return;
     }
 
-    // 1. 檢核同仁剩餘年假時數
-    const empLeaves = state.leaves.filter(l => String(l.empId).trim().toLowerCase() === String(emp.id).trim().toLowerCase());
-    const bookedHours = empLeaves.reduce((sum, l) => sum + (l.hours || 8), 0);
-    const remHours = emp.totalHours - bookedHours;
+    // 1. 若為一般年假，檢核同仁剩餘年假時數
+    if (!isOfficial) {
+      const empLeaves = state.leaves.filter(l => String(l.empId).trim().toLowerCase() === String(emp.id).trim().toLowerCase());
+      const bookedHours = empLeaves.reduce((sum, l) => sum + (l.leaveType === 'official' ? 0 : (l.hours || 0)), 0);
+      const remHours = emp.totalHours - bookedHours;
 
-    if (remHours < 8) {
-      showToast(`預假失敗！同仁【${emp.name}】剩餘年假僅剩 ${remHours} 小時，不足 8 小時無法預扣假單！`, 'error');
-      return;
+      if (remHours < 8) {
+        showToast(`預假失敗！同仁【${emp.name}】剩餘年假僅剩 ${remHours} 小時，不足 8 小時無法預扣假單！`, 'error');
+        return;
+      }
     }
 
     // 2. 檢核該同仁是否當天已預過假
@@ -1630,7 +1707,8 @@
       empId: emp.id,
       empName: emp.name,
       date: leaveDate,
-      hours: 8,
+      leaveType: selectedType,
+      hours: hours,
       status: 'locked',
       createdAt: formatDateTime(now),
       createdBy: state.currentUser ? state.currentUser.id : 'admin'
@@ -1639,7 +1717,7 @@
     state.leaves.push(newLeave);
     saveLeaves();
 
-    showToast(`✅ 主管已成功為同仁【${emp.name} (${emp.id})】完成 ${leaveDate} 之預假！${isFull ? ' (特許額滿強行預假)' : ''}`, 'success');
+    showToast(`✅ 主管已成功為同仁【${emp.name} (${emp.id})】完成 ${leaveDate} 之【${isOfficial ? '💼 公出/公假 (0小時)' : '🏖️ 一般年假'}】預假！${isFull ? ' (特許額滿強行預假)' : ''}`, 'success');
     renderApp();
   }
 

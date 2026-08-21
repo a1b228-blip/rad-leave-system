@@ -451,9 +451,9 @@
               </p>
 
               <div style="display: flex; align-items: flex-end; gap: 1.25rem; flex-wrap: wrap;">
-                <div class="form-group inline-group" style="margin-bottom: 0; flex: 1; min-width: 260px;">
+                <div class="form-group inline-group" style="margin-bottom: 0; flex: 1; min-width: 240px;">
                   <label for="admin-proxy-emp-select" style="font-weight: 600; color: var(--accent-cyan);">
-                    <i class="fa-solid fa-user"></i> 1. 選擇要代預假的同仁：
+                    <i class="fa-solid fa-user"></i> 1. 選擇同仁：
                   </label>
                   <select id="admin-proxy-emp-select" style="padding: 8px 12px; width: 100%;">
                     <option value="">-- 請選擇同仁 (顯示姓名與剩餘年假時數) --</option>
@@ -461,11 +461,21 @@
                   </select>
                 </div>
 
-                <div class="form-group inline-group" style="margin-bottom: 0; flex: 1; min-width: 220px;">
+                <div class="form-group inline-group" style="margin-bottom: 0; flex: 1; min-width: 200px;">
                   <label for="admin-proxy-date-input" style="font-weight: 600; color: var(--accent-teal);">
                     <i class="fa-solid fa-calendar-day"></i> 2. 選擇預假日期：
                   </label>
                   <input type="date" id="admin-proxy-date-input" style="padding: 8px 12px; width: 100%;">
+                </div>
+
+                <div class="form-group inline-group" style="margin-bottom: 0; flex: 1; min-width: 180px;">
+                  <label for="admin-proxy-type-select" style="font-weight: 600; color: var(--accent-amber);">
+                    <i class="fa-solid fa-tags"></i> 3. 選擇預假假別：
+                  </label>
+                  <select id="admin-proxy-type-select" style="padding: 8px 12px; width: 100%;">
+                    <option value="annual">🏖️ 一般年假 (扣 8 小時)</option>
+                    <option value="official">💼 公出/公假 (0 小時)</option>
+                  </select>
                 </div>
 
                 <div style="margin-bottom: 0;">
@@ -557,6 +567,42 @@
       </div>
       <div class="modal-footer" style="border-top: 1px solid var(--border-color); padding-top: 0.75rem;">
         <button type="button" class="btn-primary" id="btn-confirm-rules-modal">我已了解規則</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: 同仁發起預假選擇假別彈窗 -->
+  <div id="modal-leave-type" class="modal-overlay hidden">
+    <div class="modal-card glass-panel" style="max-width: 440px;">
+      <div class="modal-header">
+        <h3 style="color: var(--accent-cyan); font-size: 1.15rem;"><i class="fa-solid fa-calendar-check"></i> 請選擇預假假別</h3>
+        <button class="btn-close-modal" id="btn-close-leave-type-modal">&times;</button>
+      </div>
+      <div style="padding: 1.25rem 0;">
+        <p style="font-size: 0.9rem; color: var(--text-muted); margin-bottom: 1.25rem;">
+          您正在發起 <strong id="leave-type-modal-date-text" style="color: var(--accent-teal); text-decoration: underline;">2027-05-20</strong> 之預假申請，請選擇假別：
+        </p>
+        <div style="display: flex; flex-direction: column; gap: 12px;">
+          <label style="display: flex; align-items: center; gap: 12px; padding: 12px 16px; background: rgba(255,255,255,0.04); border: 1px solid var(--border-color); border-radius: 10px; cursor: pointer; transition: 0.2s ease;">
+            <input type="radio" name="leave-type-radio" value="annual" checked style="width: 18px; height: 18px; accent-color: var(--accent-cyan);">
+            <div>
+              <strong style="color: var(--text-main); font-size: 1rem; display: block; margin-bottom: 2px;">🏖️ 一般年假</strong>
+              <span style="font-size: 0.8rem; color: var(--text-muted);">自動預扣個人剩餘年假 8 小時</span>
+            </div>
+          </label>
+
+          <label style="display: flex; align-items: center; gap: 12px; padding: 12px 16px; background: rgba(255,255,255,0.04); border: 1px solid var(--border-color); border-radius: 10px; cursor: pointer; transition: 0.2s ease;">
+            <input type="radio" name="leave-type-radio" value="official" style="width: 18px; height: 18px; accent-color: var(--accent-teal);">
+            <div>
+              <strong style="color: #38bdf8; font-size: 1rem; display: block; margin-bottom: 2px;">💼 公出／公假</strong>
+              <span style="font-size: 0.8rem; color: var(--text-muted);">不扣個人年假 (0 小時)，計入當天預假人數</span>
+            </div>
+          </label>
+        </div>
+      </div>
+      <div class="modal-footer" style="display: flex; justify-content: flex-end; gap: 10px; border-top: 1px solid var(--border-color); padding-top: 0.85rem;">
+        <button type="button" class="btn-secondary" id="btn-cancel-leave-type">取消</button>
+        <button type="button" id="btn-confirm-leave-type" class="btn-primary"><i class="fa-solid fa-check"></i> 確認發起預假</button>
       </div>
     </div>
   </div>
