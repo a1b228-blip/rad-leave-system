@@ -277,9 +277,12 @@
           <div class="admin-card glass-panel span-2">
             <div class="card-title-bar">
               <h3><i class="fa-solid fa-sliders"></i> 全科預假管理與資料匯出</h3>
-              <div class="card-actions">
+              <div class="card-actions" style="display: flex; gap: 8px; flex-wrap: wrap;">
+                <button id="btn-export-roster-excel" class="btn-primary" style="background: linear-gradient(135deg, #10b981, #059669); border: none; font-weight: 600;">
+                  <i class="fa-solid fa-file-excel"></i> 導出 1:1 派班表 Excel / CSV
+                </button>
                 <button id="btn-export-excel" class="btn-success">
-                  <i class="fa-solid fa-file-excel"></i> 匯出全科預假 Excel / CSV
+                  <i class="fa-solid fa-file-csv"></i> 匯出平鋪清單 CSV
                 </button>
               </div>
             </div>
@@ -379,6 +382,7 @@
             <table class="data-table">
               <thead>
                 <tr>
+                  <th style="width: 50px; text-align: center;">排序</th>
                   <th>員工編號</th>
                   <th>姓名</th>
                   <th>職務／職稱</th>

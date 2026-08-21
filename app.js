@@ -15,6 +15,7 @@
   const KEY_ALLOWED_YEARS = 'rad_leave_allowed_years_v1';
   const KEY_LOCKED_YEARS = 'rad_leave_locked_years_v1';
   const KEY_SESSION = 'rad_leave_session_v1';
+  const KEY_EMP_ORDER = 'rad_leave_emp_order_v1';
 
   // 預設全科預假規範說明文件
   const DEFAULT_RULES_DOC = `🏥 佳里奇美醫院 放射診斷科
@@ -256,6 +257,7 @@
     dom.settingLimit = document.getElementById('setting-limit');
     dom.saveLimitBtn = document.getElementById('btn-save-limit');
     dom.exportExcelBtn = document.getElementById('btn-export-excel');
+    dom.btnExportRosterExcel = document.getElementById('btn-export-roster-excel');
     dom.adminEmpTable = document.getElementById('admin-employee-table');
     dom.adminAllLeavesTable = document.getElementById('admin-all-leaves-table');
     dom.addEmpBtn = document.getElementById('btn-add-employee');
@@ -693,6 +695,9 @@
 
     // Admin Export Excel / CSV
     dom.exportExcelBtn.addEventListener('click', exportToExcelCSV);
+    if (dom.btnExportRosterExcel) {
+      dom.btnExportRosterExcel.addEventListener('click', () => exportDepartmentRosterExcel());
+    }
 
     // Admin Import Employees CSV
     if (dom.btnTriggerImportEmp) {
@@ -1212,8 +1217,21 @@
       });
     }
 
-    // 1. Employee Roster (指定員工編號 911050 為名冊絕對第 1 位)
+    // 1. Employee Roster (優先採用主管手動拖拉自訂順序)
+    const rawSavedOrder = localStorage.getItem(KEY_EMP_ORDER);
+    let savedOrder = [];
+    if (rawSavedOrder) {
+      try { savedOrder = JSON.parse(rawSavedOrder); } catch (e) {}
+    }
+
     const sortedEmployees = [...state.employees].sort((a, b) => {
+      if (savedOrder && savedOrder.length > 0) {
+        const idxA = savedOrder.indexOf(a.id);
+        const idxB = savedOrder.indexOf(b.id);
+        if (idxA !== -1 && idxB !== -1) return idxA - idxB;
+        if (idxA !== -1) return -1;
+        if (idxB !== -1) return 1;
+      }
       // 1. 絕對最高優先權：員工編號 911050 擺第一位
       const ABSOLUTE_PINNED = ['911050'];
       const absA = ABSOLUTE_PINNED.indexOf(a.id);
@@ -1226,16 +1244,6 @@
       if (a.role === 'admin' && b.role !== 'admin') return -1;
       if (a.role !== 'admin' && b.role === 'admin') return 1;
 
-      // 3. 次要特定同仁順序
-      const USER_PINNED = ['A105W2', '961137'];
-      const idxA = USER_PINNED.indexOf(a.id);
-      const idxB = USER_PINNED.indexOf(b.id);
-
-      if (idxA !== -1 && idxB !== -1) return idxA - idxB;
-      if (idxA !== -1) return -1;
-      if (idxB !== -1) return 1;
-
-      // 4. 其餘同仁按員工編號排序
       return a.id.localeCompare(b.id);
     });
 
@@ -1245,7 +1253,10 @@
       const remHours = emp.totalHours - bookedHours;
 
       return `
-        <tr>
+        <tr class="drag-row" draggable="true" data-emp-id="${emp.id}">
+          <td style="text-align: center;" class="drag-handle" title="按住拖拉調整名冊順序">
+            <i class="fa-solid fa-grip-vertical" style="color: var(--accent-cyan); font-size: 1.1rem;"></i>
+          </td>
           <td><code>${emp.id}</code></td>
           <td><strong>${emp.name}</strong></td>
           <td><span class="badge" style="background: rgba(255,255,255,0.08); color: var(--text-main); border: 1px solid var(--border-color);">${emp.title || (emp.role === 'admin' ? '診斷科主管' : '醫事放射師')}</span></td>
@@ -1265,6 +1276,9 @@
         </tr>
       `;
     }).join('');
+
+    // 綁定名冊 Drag and Drop 手動拖拉排序事件
+    bindEmpTableDragEvents();
 
     // Bind In-Line Quick Edit Total Hours Input (支援 change 與 blur 即刻寫入與同步)
     dom.adminEmpTable.querySelectorAll('.input-table-hours').forEach(input => {
@@ -1719,6 +1733,156 @@
 
     showToast(`✅ 主管已成功為同仁【${emp.name} (${emp.id})】完成 ${leaveDate} 之【${isOfficial ? '💼 公出/公假 (0小時)' : '🏖️ 一般年假'}】預假！${isFull ? ' (特許額滿強行預假)' : ''}`, 'success');
     renderApp();
+  }
+
+  // 主管手動拖拉調整同仁名冊 Drag & Drop 事件監聽器
+  function bindEmpTableDragEvents() {
+    if (!dom.adminEmpTable) return;
+    const rows = dom.adminEmpTable.querySelectorAll('.drag-row');
+    let draggedRow = null;
+
+    rows.forEach(row => {
+      row.addEventListener('dragstart', (e) => {
+        draggedRow = row;
+        row.classList.add('dragging');
+        e.dataTransfer.effectAllowed = 'move';
+        e.dataTransfer.setData('text/plain', row.getAttribute('data-emp-id'));
+      });
+
+      row.addEventListener('dragend', () => {
+        if (draggedRow) draggedRow.classList.remove('dragging');
+        rows.forEach(r => r.classList.remove('drag-over'));
+        draggedRow = null;
+      });
+
+      row.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        e.dataTransfer.dropEffect = 'move';
+        if (row !== draggedRow) {
+          row.classList.add('drag-over');
+        }
+      });
+
+      row.addEventListener('dragleave', () => {
+        row.classList.remove('drag-over');
+      });
+
+      row.addEventListener('drop', (e) => {
+        e.preventDefault();
+        row.classList.remove('drag-over');
+        if (!draggedRow || draggedRow === row) return;
+
+        const draggedEmpId = draggedRow.getAttribute('data-emp-id');
+        const targetEmpId = row.getAttribute('data-emp-id');
+
+        const currentOrder = Array.from(dom.adminEmpTable.querySelectorAll('.drag-row')).map(r => r.getAttribute('data-emp-id'));
+        const fromIdx = currentOrder.indexOf(draggedEmpId);
+        const toIdx = currentOrder.indexOf(targetEmpId);
+
+        if (fromIdx !== -1 && toIdx !== -1) {
+          currentOrder.splice(fromIdx, 1);
+          currentOrder.splice(toIdx, 0, draggedEmpId);
+
+          // 持久化保存主管最新自訂名冊順序
+          localStorage.setItem(KEY_EMP_ORDER, JSON.stringify(currentOrder));
+          showToast('✅ 已成功調整並保存同仁名冊順序！全系統連動完成。', 'success');
+          renderApp();
+        }
+      });
+    });
+  }
+
+  // 導出 1:1 派班表格式 Excel / CSV (動態連動最新假單與主管名冊順序)
+  function exportDepartmentRosterExcel(targetYear, targetMonth) {
+    loadStorage();
+
+    const year = targetYear || state.currentYear;
+    const month = targetMonth !== undefined ? targetMonth : state.currentMonth; // 0-indexed
+    const monthNum = month + 1; // 1-indexed
+
+    const totalDays = new Date(year, monthNum, 0).getDate();
+    const weekdayNames = ['日', '一', '二', '三', '四', '五', '六'];
+    const monthWeekdays = [];
+    for (let d = 1; d <= totalDays; d++) {
+      const dayOfWeek = new Date(year, month, d).getDay();
+      monthWeekdays.push(weekdayNames[dayOfWeek]);
+    }
+
+    const monthPrefix = `${year}-${String(monthNum).padStart(2, '0')}`;
+    const monthLeaves = state.leaves.filter(l => l.date && l.date.startsWith(monthPrefix));
+
+    // 建立假單對照 Map
+    const leaveMap = {};
+    monthLeaves.forEach(l => {
+      const empIdClean = String(l.empId).trim().toLowerCase();
+      if (!leaveMap[empIdClean]) leaveMap[empIdClean] = {};
+      const dayNum = parseInt(l.date.split('-')[2], 10);
+      const isOfficial = l.leaveType === 'official' || l.hours === 0;
+      leaveMap[empIdClean][dayNum] = isOfficial ? '公' : 'v';
+    });
+
+    // 排序同仁 (100% 採用主管拖拉後的自訂順序)
+    const rawSavedOrder = localStorage.getItem(KEY_EMP_ORDER);
+    let savedOrder = [];
+    if (rawSavedOrder) {
+      try { savedOrder = JSON.parse(rawSavedOrder); } catch (e) {}
+    }
+
+    const sortedEmployees = [...state.employees].sort((a, b) => {
+      if (savedOrder && savedOrder.length > 0) {
+        const idxA = savedOrder.indexOf(a.id);
+        const idxB = savedOrder.indexOf(b.id);
+        if (idxA !== -1 && idxB !== -1) return idxA - idxB;
+        if (idxA !== -1) return -1;
+        if (idxB !== -1) return 1;
+      }
+      const ABSOLUTE_PINNED = ['911050'];
+      const absA = ABSOLUTE_PINNED.indexOf(a.id);
+      const absB = ABSOLUTE_PINNED.indexOf(b.id);
+      if (absA !== -1 && absB !== -1) return absA - absB;
+      if (absA !== -1) return -1;
+      if (absB !== -1) return 1;
+
+      if (a.role === 'admin' && b.role !== 'admin') return -1;
+      if (a.role !== 'admin' && b.role === 'admin') return 1;
+      return a.id.localeCompare(b.id);
+    });
+
+    // 生成 UTF-8 BOM CSV
+    let csvContent = '\uFEFF';
+    csvContent += `佳里奇美醫院 放射診斷科 工作人員預假派班表 (${year - 1911}年 / ${year}年 ${monthNum}月份)\n`;
+    
+    const dayHeaders = [];
+    for (let d = 1; d <= totalDays; d++) dayHeaders.push(d);
+    csvContent += `員工編號,姓名,${dayHeaders.join(',')},備註\n`;
+    csvContent += `星期,,${monthWeekdays.join(',')},\n`;
+
+    sortedEmployees.forEach(emp => {
+      const empIdClean = String(emp.id).trim().toLowerCase();
+      const empDayLeaves = leaveMap[empIdClean] || {};
+      const rowVals = [emp.id, emp.name];
+
+      for (let d = 1; d <= totalDays; d++) {
+        const symbol = empDayLeaves[d] || '';
+        rowVals.push(symbol);
+      }
+      rowVals.push(''); // 備註
+      csvContent += rowVals.map(v => `"${v}"`).join(',') + '\n';
+    });
+
+    csvContent += '\n"育嬰留停人員：","楊恒宜、黃毓珊、邱怡庭"\n';
+
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `佳里奇美醫院_放射診斷科_${year}年${String(monthNum).padStart(2, '0')}月_工作人員預假派班表.csv`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+
+    showToast(`已成功導出 ${year} 年 ${monthNum} 月份全科 1:1 派班預假 Excel 總表！`, 'success');
   }
 
   // Toast Notification

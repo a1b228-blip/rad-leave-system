@@ -1257,3 +1257,27 @@ code {
     letter-spacing: -0.5px;
   }
 }
+
+/* 主管同仁名冊手動拖拉排序視覺效果 */
+.drag-row {
+  transition: background 0.15s ease, opacity 0.15s ease;
+  user-select: none;
+}
+.drag-row.dragging {
+  opacity: 0.45;
+  background: rgba(6, 182, 212, 0.2) !important;
+  border: 1.5px dashed var(--accent-cyan) !important;
+}
+.drag-row.drag-over {
+  border-top: 3px solid var(--accent-teal) !important;
+  background: rgba(16, 185, 129, 0.15) !important;
+}
+.drag-handle {
+  cursor: grab;
+  transition: transform 0.15s ease, color 0.15s ease;
+}
+.drag-handle:active {
+  cursor: grabbing;
+  color: var(--accent-amber) !important;
+  transform: scale(1.25);
+}
