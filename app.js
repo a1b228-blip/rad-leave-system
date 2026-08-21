@@ -614,8 +614,9 @@
     // Rules Modal Events
     if (dom.btnViewRules) {
       dom.btnViewRules.addEventListener('click', () => {
+        const latestDoc = localStorage.getItem(KEY_RULES_DOC) || state.rulesDoc || DEFAULT_RULES_DOC;
         if (dom.rulesDisplayContent) {
-          dom.rulesDisplayContent.textContent = state.rulesDoc;
+          dom.rulesDisplayContent.textContent = latestDoc;
         }
         dom.modalRules.classList.remove('hidden');
       });
@@ -732,14 +733,25 @@
       dom.fileImportEmp.addEventListener('change', handleImportEmployeeCSV);
     }
 
-    // Admin Save Rules Doc (儲存與即時發布全科預假規範)
-    if (dom.btnSaveRulesDoc) {
-      dom.btnSaveRulesDoc.addEventListener('click', () => {
-        if (dom.adminRulesTextarea) {
-          state.rulesDoc = dom.adminRulesTextarea.value;
-          saveRulesDoc();
-          showToast('✅ 已成功儲存並同步發布最新全科預假規範說明！', 'success');
+    // Admin Save Rules Doc (儲存與即時發布全科預假規範，確保 100% 同步與精確提示)
+    const btnSaveRules = document.getElementById('btn-save-rules-doc');
+    if (btnSaveRules) {
+      btnSaveRules.addEventListener('click', (e) => {
+        e.preventDefault();
+        const textarea = document.getElementById('admin-rules-textarea');
+        if (textarea) {
+          const val = textarea.value;
+          state.rulesDoc = val;
+          localStorage.setItem(KEY_RULES_DOC, val);
+
+          if (dom.rulesDisplayContent) {
+            dom.rulesDisplayContent.textContent = val;
+          }
+
+          showToast('已同步儲存', 'success');
           renderApp();
+        } else {
+          showToast('找不到編輯框，請重新整理頁面後再試！', 'error');
         }
       });
     }
